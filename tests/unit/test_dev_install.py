@@ -55,6 +55,11 @@ class DevInstallTests(unittest.TestCase):
         for name in ("metadata.json", "extension.js", "stylesheet-dark.css", "stylesheet-light.css"):
             self.assertTrue((ext / name).is_file(), name)
         self.assertEqual(json.loads((ext / "metadata.json").read_text())["uuid"], UUID)
+        for other in ("jeronix-panel@jeronix", "jeronix-dock@jeronix"):
+            other_dir = self.data / "gnome-shell" / "extensions" / other
+            self.assertTrue((other_dir / "schemas" / "gschemas.compiled").is_file(), other)
+            self.assertTrue((other_dir / "stylesheet-dark.css").is_file(), other)
+        self.assertTrue((self.data / "gnome-shell/extensions/jeronix-quick-settings@jeronix/inhibitor.js").is_file())
 
         props = ET.parse(self.data / "gnome-background-properties" / "jeronix.xml").getroot()
         wallpaper = props.find("wallpaper")

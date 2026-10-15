@@ -48,7 +48,7 @@ dock and an empty desktop.
 | `org.gnome.desktop.background` | `picture-uri` | JERONIX light wallpaper |
 | `org.gnome.desktop.background` | `picture-uri-dark` | JERONIX dark wallpaper |
 | `org.gnome.desktop.background` | `picture-options` | `zoom` |
-| `org.gnome.desktop.background` | `primary-color` | `#1C1E1D` |
+| `org.gnome.desktop.background` | `primary-color` | `#1E1D1B` |
 | `org.gnome.desktop.screensaver` | `picture-uri` | JERONIX dark wallpaper |
 | `org.gnome.shell.extensions.dash-to-dock` | `dock-fixed` | `false` (optional) |
 | `org.gnome.shell.extensions.dash-to-dock` | `autohide` | `true` (optional) |

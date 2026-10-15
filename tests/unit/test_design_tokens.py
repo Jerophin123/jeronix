@@ -25,7 +25,7 @@ class DesignTokenTests(unittest.TestCase):
     def test_required_roles(self):
         required = {"surface", "surface-raised", "surface-overlay", "panel", "on-panel", "border",
                     "text", "text-secondary", "text-muted", "accent", "accent-strong", "on-accent",
-                    "focus-ring", "success", "warning", "danger"}
+                    "focus-ring", "success", "warning", "danger", "panel-accent", "accent-secondary"}
         for mode in design.MODES:
             with self.subTest(mode=mode):
                 self.assertLessEqual(required, set(self.tokens["color"][mode]))

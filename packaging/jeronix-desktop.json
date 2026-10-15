@@ -4,6 +4,5 @@
   "summary": "JERONIX desktop layer for Ubuntu (theme, Stay Awake, wallpapers, Pure layout)",
   "description": "Adds the JERONIX GNOME Shell theme, the Stay Awake Quick Settings toggle,\nJERONIX wallpapers and icons, and the Pure layout as system-wide GSettings\ndefaults (a dconf system database). Users can change or reset every setting.",
   "depends": ["gnome-shell (>= 50)", "gnome-shell (<< 51)", "dconf-gsettings-backend", "python3", "python3-gi"],
-  "source_extensions": ["jeronix-quick-settings"],
   "enabled_extensions": ["jeronix-shell-theme@jeronix", "jeronix-quick-settings@jeronix"]
 }

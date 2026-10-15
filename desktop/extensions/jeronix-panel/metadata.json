@@ -1,0 +1,8 @@
+{
+  "uuid": "jeronix-panel@jeronix",
+  "name": "JERONIX Panel",
+  "description": "JERONIX top bar: the JERONIX menu in place of Activities, numbered workspaces and the focused application with its window menu. Clock, Quick Settings and status indicators are unchanged.",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.jeronix-panel",
+  "version-name": "0.1.0"
+}

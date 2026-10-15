@@ -3,8 +3,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="184" viewBox="0 0 256 184" role="img" aria-labelledby="title">
   <title id="title">JERONIX</title>
   <g transform="translate(66 0)">
-    <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#8FAE94"/>
+    <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#C98352"/>
     <circle cx="55" cy="38" r="8.5" fill="#CFE0D1"/>
   </g>
-  <path transform="translate(38.75 125) scale(0.75)" d="M26 20V46A11 11 0 0 1 4 46V43M62 20H40V60H62M40 40H58M76 60V20H88A10 10 0 0 1 88 40H76M86 40L98 60M127 20A17 20 0 1 1 127 60A17 20 0 1 1 127 20M158 60V20L182 60V20M196 20V60M210 20L234 60M234 20L210 60" fill="none" stroke="#ECEFEC" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path transform="translate(38.75 125) scale(0.75)" d="M26 20V46A11 11 0 0 1 4 46V43M62 20H40V60H62M40 40H58M76 60V20H88A10 10 0 0 1 88 40H76M86 40L98 60M127 20A17 20 0 1 1 127 60A17 20 0 1 1 127 20M158 60V20L182 60V20M196 20V60M210 20L234 60M234 20L210 60" fill="none" stroke="#EFE8DA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

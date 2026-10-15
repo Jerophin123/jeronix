@@ -85,8 +85,8 @@ def background_properties(config):
     <filename-dark>{d}</filename-dark>
     <options>zoom</options>
     <shade_type>solid</shade_type>
-    <pcolor>#1C1E1D</pcolor>
-    <scolor>#1C1E1D</scolor>
+    <pcolor>#1E1D1B</pcolor>
+    <scolor>#1E1D1B</scolor>
   </wallpaper>
 </wallpapers>
 """
@@ -118,10 +118,9 @@ def build_tree(out, base_profile=None):
         return dest
 
     ext = "usr/share/gnome-shell/extensions"
-    put(assets / "extensions" / design.THEME_UUID, f"{ext}/{design.THEME_UUID}")
-    for name in config["source_extensions"]:
-        uuid = json.loads((ROOT / "desktop" / "extensions" / name / "metadata.json").read_text())["uuid"]
-        put(ROOT / "desktop" / "extensions" / name, f"{ext}/{uuid}")
+    # Every extension, as built (generated stylesheets, compiled schemas).
+    for built in sorted((assets / "extensions").iterdir()):
+        put(built, f"{ext}/{built.name}")
 
     put(assets / "wallpapers" / "jeronix-dark-3840x2160.png", f"usr/share/{layout_tool.ASSETS['wallpaper-dark']}")
     put(assets / "wallpapers" / "jeronix-light-3840x2160.png", f"usr/share/{layout_tool.ASSETS['wallpaper-light']}")

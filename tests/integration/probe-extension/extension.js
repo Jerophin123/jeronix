@@ -5,7 +5,10 @@
 // Shell's Eval method is disabled outside unsafe mode, so this exposes the
 // few queries tests need.
 
+import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -33,6 +36,33 @@ const IFACE = `
     </method>
     <method name="SetColorScheme">
       <arg type="s" direction="in" name="scheme"/>
+    </method>
+    <method name="ExtensionDebug">
+      <arg type="s" direction="in" name="uuid"/>
+      <arg type="s" direction="out" name="json"/>
+    </method>
+    <method name="SetExtensionSetting">
+      <arg type="s" direction="in" name="uuid"/>
+      <arg type="s" direction="in" name="key"/>
+      <arg type="s" direction="in" name="value"/>
+    </method>
+    <method name="Screenshot">
+      <arg type="s" direction="in" name="path"/>
+    </method>
+    <method name="MovePointer">
+      <arg type="d" direction="in" name="x"/>
+      <arg type="d" direction="in" name="y"/>
+    </method>
+    <method name="WindowAction">
+      <arg type="s" direction="in" name="title"/>
+      <arg type="s" direction="in" name="action"/>
+      <arg type="b" direction="out" name="found"/>
+    </method>
+    <method name="State">
+      <arg type="s" direction="out" name="json"/>
+    </method>
+    <method name="SetOverview">
+      <arg type="b" direction="in" name="visible"/>
     </method>
   </interface>
 </node>`;
@@ -106,6 +136,75 @@ class Probe {
     SetColorScheme(scheme) {
         new Gio.Settings({schema_id: 'org.gnome.desktop.interface'})
             .set_string('color-scheme', scheme);
+    }
+
+    // JSON from an extension's debugState(), or 'null'.
+    ExtensionDebug(uuid) {
+        const ext = Main.extensionManager.lookup(uuid);
+        return JSON.stringify(ext?.stateObj?.debugState?.() ?? null);
+    }
+
+    SetExtensionSetting(uuid, key, value) {
+        const ext = Main.extensionManager.lookup(uuid);
+        const settings = ext.stateObj.getSettings();
+        const type = settings.settings_schema.get_key(key).get_value_type();
+        settings.set_value(key, GLib.Variant.parse(type, value, null, null));
+    }
+
+    // Asynchronous: the file appears once the frame has been captured.
+    Screenshot(path) {
+        const file = Gio.File.new_for_path(path);
+        const stream = file.replace(null, false, Gio.FileCreateFlags.NONE, null);
+        new Shell.Screenshot().screenshot(false, stream)
+            .then(() => stream.close(null))
+            .catch(e => console.error(`probe screenshot: ${e.message}`));
+    }
+
+    MovePointer(x, y) {
+        if (!this._pointer) {
+            const seat = Clutter.get_default_backend().get_default_seat();
+            this._pointer = seat.create_virtual_device(Clutter.InputDeviceType.POINTER_DEVICE);
+        }
+        this._pointer.notify_absolute_motion(global.get_current_time() * 1000, x, y);
+    }
+
+    WindowAction(title, action) {
+        const win = global.get_window_actors().map(a => a.meta_window)
+            .find(w => w.get_title() === title);
+        if (!win)
+            return false;
+        if (action === 'maximize')
+            win.maximize();
+        else if (action === 'unmaximize')
+            win.unmaximize();
+        else if (action === 'activate')
+            Main.activateWindow(win);
+        else if (action === 'minimize')
+            win.minimize();
+        return true;
+    }
+
+    SetOverview(visible) {
+        if (visible)
+            Main.overview.show();
+        else
+            Main.overview.hide();
+    }
+
+    State() {
+        const monitor = Main.layoutManager.primaryMonitor;
+        return JSON.stringify({
+            overview: Main.overview.visible,
+            overviewAnimating: Main.overview.animationInProgress,
+            monitor: [monitor.x, monitor.y, monitor.width, monitor.height],
+            windows: global.get_window_actors().map(a => {
+                const r = a.meta_window.get_frame_rect();
+                return {title: a.meta_window.get_title(), rect: [r.x, r.y, r.width, r.height],
+                    maximized: a.meta_window.is_maximized?.() ?? null};
+            }),
+            workspaces: global.workspace_manager.n_workspaces,
+            activitiesVisible: Main.panel.statusArea.activities?.container.visible ?? null,
+        });
     }
 }
 

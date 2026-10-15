@@ -124,7 +124,7 @@ class ShellThemeTests(unittest.TestCase):
 
     def test_build_produces_installable_extension(self):
         with tempfile.TemporaryDirectory() as tmp:
-            design.build(Path(tmp), parts=("theme",))
+            design.build(Path(tmp), parts=("extensions",))
             ext = Path(tmp) / "extensions" / design.THEME_UUID
             for name in ("metadata.json", "extension.js", "stylesheet-dark.css", "stylesheet-light.css"):
                 self.assertTrue((ext / name).is_file(), name)

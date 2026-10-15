@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<schemalist gettext-domain="jeronix">
+  <schema id="org.gnome.shell.extensions.jeronix-dock" path="/org/gnome/shell/extensions/jeronix-dock/">
+    <key name="position" type="s">
+      <choices>
+        <choice value="bottom"/>
+        <choice value="left"/>
+        <choice value="right"/>
+      </choices>
+      <default>'bottom'</default>
+      <summary>Screen edge the dock floats along</summary>
+    </key>
+    <key name="behavior" type="s">
+      <choices>
+        <choice value="always"/>
+        <choice value="intellihide"/>
+        <choice value="autohide"/>
+      </choices>
+      <default>'intellihide'</default>
+      <summary>When the dock is visible</summary>
+      <description>always: visible and reserves space; intellihide: hides only when a window overlaps it; autohide: appears when the pointer reaches the screen edge.</description>
+    </key>
+    <key name="icon-size" type="i">
+      <range min="24" max="72"/>
+      <default>44</default>
+      <summary>Preferred icon size in pixels; shrinks automatically when apps do not fit</summary>
+    </key>
+    <key name="show-running" type="b">
+      <default>true</default>
+      <summary>Show running applications that are not favorites</summary>
+    </key>
+    <key name="show-apps-button" type="b">
+      <default>true</default>
+      <summary>Show the applications button (opens the JERONIX launcher)</summary>
+    </key>
+    <key name="show-previews" type="b">
+      <default>true</default>
+      <summary>Show window previews when hovering a running application</summary>
+    </key>
+  </schema>
+</schemalist>

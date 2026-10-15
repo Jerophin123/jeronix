@@ -1,0 +1,115 @@
+/* JERONIX Dock, @mode@ variant. Generated from design tokens @tokens-version@
+ * by scripts/jeronix_design.py; edit stylesheet.css.in, not the output.
+ * Item padding must stay in sync with ITEM_PADDING in geometry.js (8 px a side).
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+.jeronix-dock {
+  background-color: @dock-surface@;
+  border: @border-width@ solid @border@;
+  border-radius: @radius-large@;
+  padding: @space-xs@;
+  spacing: @space-xxs@;
+  box-shadow: @shadow-overlay@;
+}
+
+.jeronix-dock-items {
+  spacing: @space-xxs@;
+}
+
+.jeronix-dock .jeronix-dock-item,
+.jeronix-dock .jeronix-dock-item.overview-tile {
+  padding: 8px;
+  border-radius: @radius-medium@;
+  background-color: transparent;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-dock .jeronix-dock-item .overview-icon {
+  padding: 0;
+  spacing: 0;
+}
+
+.jeronix-dock .jeronix-dock-item:hover {
+  background-color: @hover@;
+}
+
+.jeronix-dock .jeronix-dock-item:active {
+  background-color: @pressed@;
+}
+
+.jeronix-dock .jeronix-dock-item.jeronix-dock-focused {
+  background-color: @selected-secondary@;
+}
+
+.jeronix-dock .jeronix-dock-item:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@ !important;
+}
+
+/* Running indicator: a short copper bar on the screen-edge side. */
+.jeronix-dock .app-grid-running-dot {
+  background-color: @accent@;
+  width: 8px;
+  height: 3px;
+  border-radius: @radius-pill@;
+  offset-y: 6px;
+}
+
+.jeronix-dock-left .app-grid-running-dot,
+.jeronix-dock-right .app-grid-running-dot {
+  width: 3px;
+  height: 8px;
+  offset-y: 0;
+}
+
+.jeronix-dock-separator {
+  width: @border-width@;
+  margin: @space-xs@ @space-xxs@;
+  background-color: @border@;
+}
+
+.jeronix-dock-left .jeronix-dock-separator,
+.jeronix-dock-right .jeronix-dock-separator {
+  width: auto;
+  height: @border-width@;
+  margin: @space-xxs@ @space-xs@;
+}
+
+.jeronix-dock-apps StIcon {
+  color: @text@;
+}
+
+/* Window previews. */
+.jeronix-dock-previews {
+  background-color: @surface-raised@;
+  border: @border-width@ solid @border@;
+  border-radius: @radius-large@;
+  padding: @space-xs@;
+  spacing: @space-xs@;
+  box-shadow: @shadow-overlay@;
+}
+
+.jeronix-dock-preview {
+  padding: @space-xs@;
+  border-radius: @radius-medium@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-dock-preview:hover {
+  background-color: @hover@;
+}
+
+.jeronix-dock-preview:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-dock-preview-thumb {
+  border-radius: @radius-small@;
+}
+
+.jeronix-dock-preview-title {
+  color: @text@;
+  font-size: @font-caption@;
+  max-width: 220px;
+  padding-top: @space-xxs@;
+}

@@ -1,0 +1,8 @@
+{
+  "uuid": "jeronix-dock@jeronix",
+  "name": "JERONIX Dock",
+  "description": "Floating dock with favorites, running applications, window previews, drag-and-drop pinning, keyboard access (Ctrl+Alt+Tab) and bottom, left or right placement with always, intellihide or autohide behavior.",
+  "shell-version": ["50"],
+  "settings-schema": "org.gnome.shell.extensions.jeronix-dock",
+  "version-name": "0.1.0"
+}

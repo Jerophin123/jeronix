@@ -17,7 +17,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 manifest="$data/jeronix/dev-install.manifest"
-uuid="jeronix-shell-theme@jeronix"
+# Extensions built from desktop/extensions (all JERONIX UUIDs end in @jeronix).
+uuids=(jeronix-shell-theme@jeronix jeronix-panel@jeronix jeronix-dock@jeronix jeronix-quick-settings@jeronix)
 wallpaper_dir="$data/backgrounds/jeronix"
 
 remove=0
@@ -55,7 +56,9 @@ if [[ $remove -eq 1 ]]; then
         exit 1
     fi
     # Unload the stylesheet from the running shell before deleting it.
-    gnome-extensions disable "$uuid" 2>/dev/null || true
+    for uuid in "${uuids[@]}"; do
+        gnome-extensions disable "$uuid" 2>/dev/null || true
+    done
     while IFS= read -r path; do
         # Only ever delete inside the data directory.
         [[ "$path" == "$data/"* ]] || { echo "skipping unexpected path $path" >&2; continue; }
@@ -79,7 +82,9 @@ put() {  # put <source> <destination>
     installed+=("$2")
 }
 
-put "$build/extensions/$uuid" "$data/gnome-shell/extensions/$uuid"
+for uuid in "${uuids[@]}"; do
+    put "$build/extensions/$uuid" "$data/gnome-shell/extensions/$uuid"
+done
 put "$build/wallpapers/jeronix-dark-3840x2160.png" "$wallpaper_dir/jeronix-dark.png"
 put "$build/wallpapers/jeronix-light-3840x2160.png" "$wallpaper_dir/jeronix-light.png"
 
@@ -95,8 +100,8 @@ cat > "$properties" <<EOF
     <filename-dark>$wallpaper_dir/jeronix-dark.png</filename-dark>
     <options>zoom</options>
     <shade_type>solid</shade_type>
-    <pcolor>#1C1E1D</pcolor>
-    <scolor>#1C1E1D</scolor>
+    <pcolor>#1E1D1B</pcolor>
+    <scolor>#1E1D1B</scolor>
   </wallpaper>
 </wallpapers>
 EOF
@@ -112,7 +117,8 @@ printf '%s\n' "${installed[@]}" > "$manifest"
 echo "installed JERONIX desktop identity into $data (${#installed[@]} items, listed in $manifest)"
 echo
 echo "Nothing has been switched on. Next steps:"
-echo "  1. Log out and back in once (Wayland) so GNOME Shell discovers $uuid."
-echo "  2. gnome-extensions enable $uuid          # theme, live; disable to undo"
+echo "  1. Log out and back in once (Wayland) so GNOME Shell discovers the extensions."
+echo "  2. gnome-extensions enable jeronix-shell-theme@jeronix   (and jeronix-panel@jeronix, jeronix-dock@jeronix)"
+echo "     Each one applies live; gnome-extensions disable undoes it."
 echo "  3. scripts/jeronix_layout.py plan desktop/layouts/pure.json"
 echo "     scripts/jeronix_layout.py apply desktop/layouts/pure.json   # live; 'restore' undoes it"

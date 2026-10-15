@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- JERONIX mark v0.2: app and system identity, 32 px and up. SPDX-License-Identifier: CC-BY-SA-4.0. Original JERONIX artwork; see design/icons/README.md. -->
+<!-- JERONIX mark v0.3 (v0.2 geometry, graphite/copper/sage palette): app and system identity, 32 px and up. SPDX-License-Identifier: CC-BY-SA-4.0. Original JERONIX artwork; see design/icons/README.md. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
   <title id="title">JERONIX</title>
-  <rect x="8" y="8" width="112" height="112" rx="28" fill="#1C1E1D"/>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="#1E1D1B"/>
   <!-- Hooked stem: a drawn J whose tail curls back upward, leaving an open bowl. -->
-  <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#8FAE94"/>
+  <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#C98352"/>
   <!-- Seed: the offset dot that stands in for the J's crossbar. -->
   <circle cx="55" cy="38" r="8.5" fill="#CFE0D1"/>
 </svg>

@@ -8,8 +8,9 @@ everywhere. The wordmark letters are drawn strokes rather than text.
 ## The mark
 
 A drawn **J**: a vertical stem that curves into an open bowl and hooks back
-upward, with an offset **seed** dot standing in for the crossbar. The stem
-is sage, the seed is light sage, and the tile is charcoal.
+upward, with an offset **seed** dot standing in for the crossbar. Since v0.3
+the J is copper, the seed is light sage, and the tile is graphite. The
+on-light variants use deep copper and moss.
 
 v0.2 (Milestone 4) refined the v0.1 draft:
 

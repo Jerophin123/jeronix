@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<schemalist gettext-domain="jeronix">
+  <schema id="org.gnome.shell.extensions.jeronix-panel" path="/org/gnome/shell/extensions/jeronix-panel/">
+    <key name="show-menu-label" type="b">
+      <default>true</default>
+      <summary>Show the JERONIX name next to the menu symbol</summary>
+    </key>
+    <key name="show-workspaces" type="b">
+      <default>true</default>
+      <summary>Show numbered workspace buttons in the top bar</summary>
+    </key>
+    <key name="show-window-context" type="b">
+      <default>true</default>
+      <summary>Show the focused application with its window menu</summary>
+    </key>
+    <key name="hide-activities" type="b">
+      <default>true</default>
+      <summary>Replace the Activities button with the JERONIX menu</summary>
+    </key>
+  </schema>
+</schemalist>

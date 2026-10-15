@@ -75,7 +75,7 @@ def outer(keep_logs):
         for sub in ("home", "data", "config/glib-2.0/settings", "cache", "run"):
             (tmp / sub).mkdir(parents=True)
         (tmp / "run").chmod(0o700)
-        design.build(tmp / "build", parts=("theme",))
+        design.build(tmp / "build", parts=("extensions",))
         ext_dir = tmp / "data" / "gnome-shell" / "extensions"
         shutil.copytree(tmp / "build" / "extensions" / UUID, ext_dir / UUID)
         shutil.copytree(PROBE_SRC, ext_dir / PROBE_UUID)

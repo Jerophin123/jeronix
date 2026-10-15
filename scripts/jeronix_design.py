@@ -5,12 +5,12 @@
 Everything this produces is derived and goes to an output directory (default
 out/, which Git ignores). Source files are never modified.
 
-    scripts/jeronix_design.py build [--out DIR] [--only theme,wallpapers,icons,branding]
+    scripts/jeronix_design.py build [--out DIR] [--only extensions,wallpapers,icons,branding]
     scripts/jeronix_design.py check            # token and contrast validation only
 
 Outputs:
-    extensions/jeronix-shell-theme@jeronix/   installable extension with
-                                              generated stylesheet-{dark,light}.css
+    extensions/<uuid>/                        every extension, installable, with
+                                              generated stylesheets and schemas
     wallpapers/jeronix-{dark,light}.svg       procedural wallpapers (vector)
     wallpapers/jeronix-{mode}-{W}x{H}.png     rendered at common display sizes
     icons/hicolor/...                         app icon theme layout
@@ -22,6 +22,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -32,11 +33,16 @@ ICONS = ROOT / "design" / "icons"
 THEME_TEMPLATE = ROOT / "desktop" / "theme" / "gnome-shell" / "jeronix.css.in"
 THEME_EXTENSION = ROOT / "desktop" / "extensions" / "jeronix-shell-theme"
 THEME_UUID = "jeronix-shell-theme@jeronix"
+EXTENSIONS = ROOT / "desktop" / "extensions"
+# Design assets bundled into extensions: {extension dir: {target: design/icons file}}.
+EXTENSION_ICONS = {
+    "jeronix-panel": {"icons/jeronix-symbolic.svg": "jeronix-mark-symbolic.svg"},
+}
 
 MODES = ("dark", "light")
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 PLACEHOLDER = re.compile(r"@([a-z0-9-]+)@")
-PARTS = ("theme", "wallpapers", "icons", "branding")
+PARTS = ("extensions", "wallpapers", "icons", "branding")
 
 # Common desktop resolutions the wallpapers are rendered at. The vector
 # source adapts its composition to each aspect ratio instead of cropping.
@@ -183,6 +189,8 @@ def theme_variables(tokens, mode, platform):
     v["panel-hover"] = rgba(p["on-panel"], i["hover-opacity"] * 2)
     v["panel-pressed"] = rgba(p["on-panel"], i["pressed-opacity"] * 2)
     v["selection"] = rgba(p["accent"], i["selected-opacity"] * 1.5)
+    v["selected-secondary"] = rgba(p["accent-secondary"], i["selected-opacity"])
+    v["dock-surface"] = rgba(p["surface-raised"], 0.94)
     # Light popovers need softer shadows than dark ones to look the same.
     shadow_scale = 1.0 if mode == "dark" else 0.5
     for name, spec in tokens["elevation"].items():
@@ -262,14 +270,49 @@ def theme_checks(tokens, mode):
     ]
 
 
-def build_theme(tokens, platform, out):
-    dest = out / "extensions" / THEME_UUID
+def extension_dirs():
+    return sorted(p for p in EXTENSIONS.iterdir() if (p / "metadata.json").is_file())
+
+
+def stylesheet_template(ext_dir):
+    """The token template an extension's stylesheets are generated from."""
+    if ext_dir == THEME_EXTENSION:
+        return THEME_TEMPLATE
+    template = ext_dir / "stylesheet.css.in"
+    return template if template.is_file() else None
+
+
+def build_extension(tokens, platform, ext_dir, out):
+    """Copies one extension into out/extensions/<uuid> and adds its derived
+    files: stylesheet-{dark,light}.css, gschemas.compiled, bundled icons."""
+    uuid = json.loads((ext_dir / "metadata.json").read_text(encoding="utf-8"))["uuid"]
+    dest = out / "extensions" / uuid
     if dest.exists():
         shutil.rmtree(dest)
-    shutil.copytree(THEME_EXTENSION, dest)
-    for mode in MODES:
-        (dest / f"stylesheet-{mode}.css").write_text(render_shell_css(tokens, mode, platform), encoding="utf-8")
-    return [dest / f"stylesheet-{mode}.css" for mode in MODES]
+    shutil.copytree(ext_dir, dest, ignore=shutil.ignore_patterns("*.in", "gschemas.compiled", "__pycache__"))
+    built = []
+    template = stylesheet_template(ext_dir)
+    if template:
+        for mode in MODES:
+            css = render_template(template.read_text(encoding="utf-8"), theme_variables(tokens, mode, platform))
+            path = dest / f"stylesheet-{mode}.css"
+            path.write_text(css, encoding="utf-8")
+            built.append(path)
+    if list((dest / "schemas").glob("*.gschema.xml")):
+        subprocess.run(["glib-compile-schemas", "--strict", str(dest / "schemas")], check=True)
+        built.append(dest / "schemas" / "gschemas.compiled")
+    for target, source in EXTENSION_ICONS.get(ext_dir.name, {}).items():
+        (dest / target).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ICONS / source, dest / target)
+        built.append(dest / target)
+    return built
+
+
+def build_extensions(tokens, platform, out):
+    built = []
+    for ext_dir in extension_dirs():
+        built += build_extension(tokens, platform, ext_dir, out)
+    return built
 
 
 # -- wallpapers -------------------------------------------------------------
@@ -415,8 +458,8 @@ def build(out, parts=PARTS):
             problems + [f"{m}: {fg} on {bg} {ratio:.2f} < {mn}" for m, fg, bg, ratio, mn in failing]))
     out.mkdir(parents=True, exist_ok=True)
     built = []
-    if "theme" in parts:
-        built += build_theme(tokens, platform, out)
+    if "extensions" in parts:
+        built += build_extensions(tokens, platform, out)
     if "wallpapers" in parts:
         built += build_wallpapers(tokens, out)
     if "icons" in parts:

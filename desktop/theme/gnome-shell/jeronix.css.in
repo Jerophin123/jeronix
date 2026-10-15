@@ -205,6 +205,16 @@
   border-radius: @radius-large@;
 }
 
+/* Current workspace in the overview's thumbnail strip. */
+.workspace-thumbnail-indicator {
+  border: 3px solid @accent@;
+  border-radius: @radius-small@;
+}
+
+.workspace-thumbnails .workspace-thumbnail {
+  border-radius: @radius-small@;
+}
+
 .search-entry {
   background-color: @surface-raised@;
   color: @text@;

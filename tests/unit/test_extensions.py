@@ -46,6 +46,52 @@ class ExtensionManifestTests(unittest.TestCase):
                 self.assertNotIn("imports.", src, "legacy imports.* API is not supported")
 
 
+class ExtensionSchemaTests(unittest.TestCase):
+    def test_settings_schema_matches_metadata(self):
+        for ext in extension_dirs():
+            meta = json.loads((ext / "metadata.json").read_text(encoding="utf-8"))
+            schemas = sorted((ext / "schemas").glob("*.gschema.xml")) if (ext / "schemas").is_dir() else []
+            with self.subTest(extension=ext.name):
+                if "settings-schema" not in meta:
+                    self.assertEqual(schemas, [], "schema files without settings-schema in metadata")
+                    continue
+                self.assertEqual(meta["settings-schema"], f"org.gnome.shell.extensions.{ext.name}")
+                self.assertEqual([s.name for s in schemas], [f"{meta['settings-schema']}.gschema.xml"])
+                text = schemas[0].read_text(encoding="utf-8")
+                self.assertIn(f'id="{meta["settings-schema"]}"', text)
+                self.assertIn(f'path="/org/gnome/shell/extensions/{ext.name}/"', text)
+
+    @unittest.skipUnless(shutil.which("glib-compile-schemas"), "glib-compile-schemas not installed")
+    def test_schemas_compile_strictly(self):
+        for ext in extension_dirs():
+            if not (ext / "schemas").is_dir():
+                continue
+            with self.subTest(extension=ext.name):
+                result = subprocess.run(["glib-compile-schemas", "--strict", "--dry-run", str(ext / "schemas")],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_no_compiled_or_generated_files_in_source(self):
+        for ext in extension_dirs():
+            with self.subTest(extension=ext.name):
+                self.assertFalse(list(ext.rglob("gschemas.compiled")))
+                self.assertFalse([p for p in ext.glob("stylesheet*.css")])
+
+    def test_every_extension_documents_itself(self):
+        for ext in extension_dirs():
+            with self.subTest(extension=ext.name):
+                self.assertTrue((ext / "README.md").is_file())
+
+    def test_no_private_shell_internals(self):
+        # Extensions may use the shell's exported classes and functions, but
+        # not monkey-patch prototypes (InjectionManager is the supported way).
+        for js in sorted(EXTENSIONS.rglob("*.js")):
+            with self.subTest(file=js.name):
+                src = js.read_text(encoding="utf-8")
+                self.assertNotRegex(src, r"\.prototype\.\w+\s*=")
+                self.assertNotIn("global.context.unsafe_mode", src)
+
+
 @unittest.skipUnless(shutil.which("gjs"), "gjs not installed")
 class JavaScriptSyntaxTests(unittest.TestCase):
     def test_extension_js_parses(self):

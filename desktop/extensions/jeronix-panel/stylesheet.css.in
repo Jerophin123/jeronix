@@ -1,0 +1,85 @@
+/* JERONIX Panel, @mode@ variant. Generated from design tokens @tokens-version@
+ * by scripts/jeronix_design.py; edit stylesheet.css.in, not the output.
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* JERONIX menu button: copper symbol and spaced wordmark. */
+.jeronix-menu-box {
+  spacing: @space-xs@;
+}
+
+.jeronix-menu-icon {
+  icon-size: 1.4em;
+  color: @panel-accent@;
+}
+
+.jeronix-menu-label {
+  color: @on-panel@;
+  font-weight: @weight-bold@;
+}
+
+/* Workspace pills: numbered, the active one filled with copper. */
+#panel .panel-button.jeronix-workspaces,
+#panel .panel-button.jeronix-workspaces:hover,
+#panel .panel-button.jeronix-workspaces:focus {
+  box-shadow: none;
+  background-color: transparent;
+}
+
+.jeronix-workspaces-box {
+  spacing: @space-xxs@;
+}
+
+.jeronix-workspace-pill {
+  height: 20px;
+  min-width: 20px;
+  padding: 0 @space-xs@;
+  border-radius: @radius-pill@;
+  color: @on-panel@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+  background-color: transparent;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-workspace-pill:hover {
+  background-color: @panel-hover@;
+}
+
+.jeronix-workspace-pill:checked {
+  background-color: @panel-accent@;
+  color: @panel@;
+}
+
+.jeronix-workspace-pill:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @panel-accent@;
+}
+
+/* Focused application context. */
+.jeronix-window-context-box {
+  spacing: @space-xs@;
+}
+
+.jeronix-window-context-icon {
+  icon-size: 1.1em;
+}
+
+.jeronix-window-context StLabel {
+  color: @on-panel@;
+  font-weight: @weight-medium@;
+}
+
+/* JERONIX menu popover. */
+.jeronix-menu .popup-menu-item {
+  spacing: @space-sm@;
+}
+
+.jeronix-menu .popup-menu-icon {
+  color: @accent@;
+}
+
+.jeronix-menu .popup-separator-menu-item-label {
+  color: @text-muted@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+}

@@ -2,6 +2,6 @@
 <!-- JERONIX glyph without tile, transparent, for light backgrounds. SPDX-License-Identifier: CC-BY-SA-4.0. Original JERONIX artwork; see design/icons/README.md. -->
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
   <title id="title">JERONIX</title>
-  <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#3E5E45"/>
-  <circle cx="55" cy="38" r="8.5" fill="#8FAE94"/>
+  <path d="M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z" fill="#8C4E25"/>
+  <circle cx="55" cy="38" r="8.5" fill="#3E5E45"/>
 </svg>
