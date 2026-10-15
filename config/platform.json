@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "description": "Single source of truth for the platform JERONIX targets. Tests, extension manifests and packaging read from here.",
+  "ubuntu": {
+    "version": "26.04",
+    "codename": "resolute"
+  },
+  "architectures": ["amd64"],
+  "gnome_shell": {
+    "supported_versions": ["50"]
+  },
+  "minimum_versions": {
+    "gjs": "1.88.0",
+    "gtk4": "4.22.0",
+    "libadwaita": "1.9.0",
+    "python3": "3.14"
+  }
+}

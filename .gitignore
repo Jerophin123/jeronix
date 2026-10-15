@@ -1,0 +1,21 @@
+# Build outputs and release artifacts never go in Git.
+/out/
+/_build/
+*.iso
+*.img
+*.qcow2
+*.vmdk
+*.vdi
+*.squashfs
+*.deb
+*.changes
+*.buildinfo
+*.sha256
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors
+.vscode/
+*.swp

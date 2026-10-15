@@ -1,0 +1,7 @@
+{
+  "uuid": "jeronix-quick-settings@jeronix",
+  "name": "JERONIX Quick Settings",
+  "description": "Adds a Stay Awake toggle to Quick Settings that blocks screen blanking and automatic suspend while it is on.",
+  "shell-version": ["50"],
+  "version-name": "0.1.0"
+}
