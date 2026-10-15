@@ -1,0 +1,7 @@
+{
+  "uuid": "jeronix-shell-theme@jeronix",
+  "name": "JERONIX Shell Theme",
+  "description": "Applies the JERONIX look (charcoal surfaces, sage accents, visible focus rings) to the top panel, Quick Settings, menus, overview, search and notifications. Disable it to return to the default theme immediately.",
+  "shell-version": ["50"],
+  "version-name": "0.1.0"
+}

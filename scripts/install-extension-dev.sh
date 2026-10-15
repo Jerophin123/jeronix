@@ -13,6 +13,11 @@ if [[ "${1:-}" == --remove ]]; then remove=1; shift; fi
 name="${1:?extension directory name required}"
 src="desktop/extensions/$name"
 [[ -f "$src/metadata.json" ]] || { echo "no extension at $src" >&2; exit 1; }
+if [[ "$name" == jeronix-shell-theme ]]; then
+    # Its stylesheets are generated from the design tokens at build time.
+    echo "use scripts/install-desktop-dev.sh for the shell theme" >&2
+    exit 1
+fi
 
 uuid="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["uuid"])' "$src/metadata.json")"
 dest="${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/$uuid"

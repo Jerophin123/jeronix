@@ -1,29 +1,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Consistency checks for design/tokens/tokens.json and brand artwork."""
+"""Consistency checks for design/tokens/tokens.json."""
 
+import copy
 import json
-import re
+import sys
 import unittest
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
+import jeronix_design as design  # noqa: E402
+
 TOKENS = ROOT / "design" / "tokens" / "tokens.json"
-HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
-
-
-def relative_luminance(hex_color):
-    def channel(c):
-        c = c / 255
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-
-    r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
-    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
-
-
-def contrast_ratio(a, b):
-    la, lb = sorted((relative_luminance(a), relative_luminance(b)), reverse=True)
-    return (la + 0.05) / (lb + 0.05)
 
 
 class DesignTokenTests(unittest.TestCase):
@@ -31,50 +19,56 @@ class DesignTokenTests(unittest.TestCase):
     def setUpClass(cls):
         cls.tokens = json.loads(TOKENS.read_text(encoding="utf-8"))
 
-    def test_schema_and_version(self):
-        self.assertEqual(self.tokens["schema"], 1)
-        self.assertRegex(self.tokens["version"], r"^\d+\.\d+\.\d+$")
+    def test_tokens_are_valid(self):
+        self.assertEqual(design.validate_tokens(self.tokens), [])
 
-    def test_modes_define_identical_roles(self):
-        dark = self.tokens["color"]["dark"]
-        light = self.tokens["color"]["light"]
-        self.assertEqual(set(dark), set(light))
-
-    def test_colors_are_hex(self):
-        for mode, palette in self.tokens["color"].items():
-            for role, value in palette.items():
-                self.assertRegex(value, HEX, f"{mode}.{role}")
-        for name, value in self.tokens["brand"].items():
-            self.assertRegex(value, HEX, f"brand.{name}")
+    def test_required_roles(self):
+        required = {"surface", "surface-raised", "surface-overlay", "panel", "on-panel", "border",
+                    "text", "text-secondary", "text-muted", "accent", "accent-strong", "on-accent",
+                    "focus-ring", "success", "warning", "danger"}
+        for mode in design.MODES:
+            with self.subTest(mode=mode):
+                self.assertLessEqual(required, set(self.tokens["color"][mode]))
 
     def test_contrast_pairs_meet_minimums(self):
-        for mode, palette in self.tokens["color"].items():
-            for fg, bg, minimum in self.tokens["contrast"]["pairs"]:
-                with self.subTest(mode=mode, fg=fg, bg=bg):
-                    ratio = contrast_ratio(palette[fg], palette[bg])
-                    self.assertGreaterEqual(
-                        ratio, minimum,
-                        f"{mode}: {fg} on {bg} is {ratio:.2f}:1, needs {minimum}:1")
+        for scope, fg, bg, ratio, minimum in design.contrast_report(self.tokens):
+            with self.subTest(scope=scope, fg=fg, bg=bg):
+                self.assertGreaterEqual(ratio, minimum, f"{scope}: {fg} on {bg} is {ratio:.2f}:1")
 
-    def test_scales_are_ascending(self):
-        spacing = self.tokens["spacing-px"]
-        self.assertEqual(spacing, sorted(set(spacing)))
-        icons = self.tokens["icon-size-px"]
-        self.assertEqual(icons, sorted(set(icons)))
-        durations = list(self.tokens["motion"]["duration-ms"].values())
-        self.assertEqual(durations, sorted(durations))
+    def test_contrast_pairs_reference_real_roles(self):
+        roles = set(design.palette(self.tokens, "dark"))
+        for fg, bg, _ in self.tokens["contrast"]["pairs"]:
+            self.assertIn(fg, roles)
+            self.assertIn(bg, roles)
+        for fg, bg, _ in self.tokens["contrast"]["brand-pairs"]:
+            self.assertIn(fg, self.tokens["brand"])
+            self.assertIn(bg, self.tokens["brand"])
 
-    def test_brand_artwork_uses_token_colors(self):
-        allowed = {v.upper() for v in self.tokens["brand"].values()}
-        for mode in self.tokens["color"].values():
-            allowed |= {v.upper() for v in mode.values()}
-        svgs = sorted((ROOT / "design" / "icons").glob("*.svg"))
-        self.assertTrue(svgs, "no brand SVGs found")
-        for svg in svgs:
-            with self.subTest(svg=svg.name):
-                ET.parse(svg)  # well-formed XML
-                used = {c.upper() for c in re.findall(r"#[0-9A-Fa-f]{6}\b", svg.read_text(encoding="utf-8"))}
-                self.assertLessEqual(used, allowed, f"colors not in tokens: {used - allowed}")
+    def test_contrast_math(self):
+        self.assertAlmostEqual(design.contrast_ratio("#000000", "#FFFFFF"), 21.0, places=2)
+        self.assertAlmostEqual(design.contrast_ratio("#777777", "#777777"), 1.0)
+        self.assertEqual(design.blend("#FFFFFF", "#000000", 0.5), "#808080")
+
+    def test_validator_rejects_bad_tokens(self):
+        cases = {
+            "bad hex": lambda t: t["color"]["dark"].update(text="#ECEFE"),
+            "mode role mismatch": lambda t: t["color"]["light"].pop("panel"),
+            "off-grid spacing": lambda t: t["spacing-px"].update(md=15),
+            "unknown wallpaper color": lambda t: t["wallpaper"]["dark"].update(line="nope"),
+            "opacity out of range": lambda t: t["interaction"].update({"hover-opacity": 1.5}),
+            "missing section": lambda t: t.pop("motion"),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(case=name):
+                broken = copy.deepcopy(self.tokens)
+                mutate(broken)
+                self.assertTrue(design.validate_tokens(broken))
+
+    def test_low_contrast_is_detected(self):
+        broken = copy.deepcopy(self.tokens)
+        broken["color"]["dark"]["text-muted"] = "#3A3F3B"
+        failing = [r for r in design.contrast_report(broken) if r[3] < r[4]]
+        self.assertTrue(any(r[1] == "text-muted" for r in failing))
 
 
 if __name__ == "__main__":

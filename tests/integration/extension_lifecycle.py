@@ -34,6 +34,16 @@ STATE_ERROR = 3
 STATE_INITIALIZED = 6  # loaded, never enabled
 
 
+def remove_sandbox(tmp):
+    """Deletes the sandbox. Session helpers such as gvfsd can recreate
+    run/ for a moment after the bus closes, so retry briefly."""
+    for _ in range(10):
+        shutil.rmtree(tmp, ignore_errors=True)
+        if not tmp.exists():
+            return
+        time.sleep(0.3)
+
+
 def outer(keep_logs):
     """Prepare the sandbox and re-run this script on a private session bus."""
     for tool in ("gnome-shell", "dbus-run-session"):
@@ -75,7 +85,7 @@ def outer(keep_logs):
         if keep_logs:
             print(f"logs kept in {tmp}")
         else:
-            shutil.rmtree(tmp, ignore_errors=True)
+            remove_sandbox(tmp)
 
 
 class Inner:

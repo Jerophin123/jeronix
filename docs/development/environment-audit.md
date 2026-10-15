@@ -93,15 +93,19 @@ initialized as a Git repository on `main`.
    and headless lifecycle tests. *Done in this session.*
 3. **M4 Desktop identity:** generate a Shell stylesheet from the tokens, add
    wallpapers and logo variants, and build a first layout (Pure, because it
-   needs the fewest extensions).
-4. **M5 Layout engine and Layout Studio:** versioned layout schema,
-   validation, snapshot and rollback through GSettings, then the presets.
+   needs the fewest extensions). *Implemented and tested automatically;
+   the manual session check is pending. See [milestone-4.md](milestone-4.md).*
+4. **M5 Layout engine and Layout Studio:** extend the layout schema 1 and
+   validation, snapshot and rollback tool from M4 to more presets and
+   explicit extension switching, then build the Layout Studio app.
    The `jeronix-dock` extension is a dependency of Classic and Studio.
 5. **M6 Applications:** System Information first (read-only, simplest),
    then Welcome and Settings.
 6. **M7 Debian packages:** source packages per component, a meta-package,
    then lintian and install/remove tests in a disposable VM.
 7. **M8 ISO:** remaster pipeline, checksums, then UEFI boot and install
-   tests in fresh VMs.
+   tests in fresh VMs. *First iteration done ahead of M5–M7:
+   `scripts/build-iso.sh` remasters Ubuntu 26.04.1 Desktop (ADR 0003). Boot
+   and install tests are pending: [iso-testing.md](iso-testing.md).*
 8. **M9 Release readiness:** security, upgrade and licensing reviews, plus
    the hardware matrix.

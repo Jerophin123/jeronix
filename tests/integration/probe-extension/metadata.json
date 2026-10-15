@@ -1,6 +1,6 @@
 {
   "uuid": "jeronix-test-probe@jeronix",
   "name": "JERONIX Test Probe",
-  "description": "Test-only. Exposes Quick Settings state over D-Bus inside isolated headless test shells. Never install on a real session.",
+  "description": "Test-only. Exposes Quick Settings state and computed theme styles over D-Bus inside isolated headless test shells. Never install on a real session.",
   "shell-version": ["50"]
 }

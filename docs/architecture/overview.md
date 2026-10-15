@@ -31,6 +31,43 @@ Supporting directories:
   values), never shell code.
 - GNOME system files under `/usr/share/gnome-shell` are never edited.
   Customization goes through extensions, GSettings overrides and themes.
+- Source and derived files are kept apart. Generated stylesheets, wallpaper
+  renders and icon PNGs go to `out/` (never committed); runtime state such
+  as layout snapshots goes to `$XDG_STATE_HOME/jeronix/`.
+
+## Desktop identity pipeline (Milestone 4)
+
+```
+design/tokens/tokens.json ─┐
+desktop/theme/gnome-shell/ ├─ scripts/jeronix_design.py build ─► out/
+  jeronix.css.in           │     extensions/jeronix-shell-theme@jeronix/stylesheet-{dark,light}.css
+design/icons/*.svg ────────┘     wallpapers/  icons/hicolor/  branding/
+
+out/ ─ scripts/install-desktop-dev.sh ─► ~/.local/share (theme, wallpapers, icons; nothing enabled)
+desktop/layouts/pure.json ─ scripts/jeronix_layout.py apply|restore ─► GSettings (+ snapshot)
+```
+
+- The shell theme is a stylesheet-only extension layered over the session's
+  default theme (Yaru), as decided in
+  [ADR 0002](decisions/0002-shell-theme-and-layouts.md).
+- Layouts are allowlisted GSettings values checked against the installed
+  schemas. They never toggle extensions.
+
+## Packaging and image (first iteration)
+
+```
+repo ─ packaging/jeronix_payload.py ─► jeronix-desktop tree + .deb
+          (extensions, wallpapers, icons, layout tool, Pure as dconf system db)
+
+official Ubuntu 26.04.1 ISO (signed SHA256SUMS) ─┐
+jeronix-desktop tree ───────────────────────────┼─ build/iso/jeronix_iso.py ─► out/iso/jeronix-26.04-x86_64.iso
+                                                 │    rebuild casper/minimal.squashfs (no root)
+                                                 └─   xorriso replay of Ubuntu's signed boot setup
+```
+
+See [ADR 0003](decisions/0003-iso-remastering.md) and
+[build/iso/README.md](../../build/iso/README.md). The `.deb` is a
+first-step package. Source packages and an APT repository remain M7 work.
 
 ## Extension conventions
 

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "description": "Pinned Ubuntu base image for the JERONIX ISO. Only these values are trusted; the checksum is never taken from the download itself.",
+  "ubuntu": {
+    "version": "26.04.1",
+    "series": "26.04",
+    "codename": "resolute",
+    "flavor": "desktop",
+    "arch": "amd64"
+  },
+  "iso": "ubuntu-26.04.1-desktop-amd64.iso",
+  "mirror": "https://releases.ubuntu.com/26.04/",
+  "checksums": "SHA256SUMS",
+  "signature": "SHA256SUMS.gpg",
+  "signing_key": {
+    "fingerprint": "843938DF228D22F7B3742BC0D94AA3F0EFE21092",
+    "uid": "Ubuntu CD Image Automatic Signing Key (2012) <cdimage@ubuntu.com>",
+    "keyring": "/usr/share/keyrings/ubuntu-archive-keyring.gpg"
+  },
+  "output": {
+    "name": "jeronix-26.04-x86_64.iso",
+    "volume_note": "The ISO volume ID is kept identical to Ubuntu's because the signed GRUB on the EFI partition finds the medium by it."
+  }
+}

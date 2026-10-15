@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JERONIX mark, v0.1. Original artwork. SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">JERONIX</title>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="#1C1E1D"/>
+  <!-- Hooked stem: a drawn J whose tail curls back upward, leaving an open bowl. -->
+  <path d="M80 30 V72 A22 22 0 0 1 36 72 V66" fill="none" stroke="#8FAE94" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Seed: the offset dot that stands in for the J's crossbar. -->
+  <circle cx="51" cy="37" r="8.5" fill="#CFE0D1"/>
+</svg>

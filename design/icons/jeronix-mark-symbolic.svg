@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- JERONIX symbolic icon: filled shapes only, recolored by GTK and GNOME Shell. SPDX-License-Identifier: CC-BY-SA-4.0. Original JERONIX artwork; see design/icons/README.md. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <path d="M9.25 3.5A1.25 1.25 0 0 1 11.75 3.5V9.5A3.75 3.75 0 0 1 4.25 9.5V8.5A1.25 1.25 0 0 1 6.75 8.5V9.5A1.25 1.25 0 0 0 9.25 9.5Z" fill="#1C1F1D"/>
+  <circle cx="6" cy="4.25" r="1.5" fill="#1C1F1D"/>
+</svg>
