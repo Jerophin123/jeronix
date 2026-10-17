@@ -4,6 +4,7 @@ derived from the Pure layout, package metadata, and absence of secrets or
 development files."""
 
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -71,7 +72,9 @@ class PayloadTests(unittest.TestCase):
     def test_only_expected_top_level_trees(self):
         allowed = ("etc/dconf/", "etc/jeronix-release", "usr/bin/jeronix-layout", "usr/share/gnome-shell/extensions/",
                    "usr/share/backgrounds/jeronix/", "usr/share/gnome-background-properties/jeronix.xml",
-                   "usr/share/icons/hicolor/", "usr/share/jeronix/", "usr/share/doc/jeronix-desktop/")
+                   "usr/share/icons/hicolor/", "usr/share/icons/JERONIX/", "usr/share/jeronix/",
+                   "usr/share/doc/jeronix-desktop/", "usr/share/applications/io.jeronix.",
+                   "etc/xdg/autostart/io.jeronix.Welcome.desktop")
         for rel in self.files:
             self.assertTrue(rel.startswith(allowed), rel)
 
@@ -98,14 +101,16 @@ class PayloadTests(unittest.TestCase):
             self.assertRegex(keyfile, rf"(?m)^{re.escape(s['key'])}=", s["key"])
         self.assertIn("file:///usr/share/backgrounds/jeronix/jeronix-dark.png", keyfile)
         self.assertNotIn(".local/share", keyfile)
-        exts = ", ".join(f"'{e}'" for e in self.config["enabled_extensions"])
+        exts = ", ".join(f"'{e}'" for e in self.p.default_extensions())
         self.assertIn(f"enabled-extensions=[{exts}]", keyfile)
+        self.assertIn("disabled-extensions=['ubuntu-dock@ubuntu.com', 'ding@rastersoft.com']", keyfile)
+        self.assertIn("[org/gnome/shell/extensions/jeronix-dock]", keyfile)
         db = (self.root / "etc/dconf/db/jeronix").read_bytes()
         self.assertTrue(db.startswith(b"GVariant"), "compiled dconf database")
 
     def test_enabled_extensions_are_shipped_and_supported(self):
         platform = json.loads((ROOT / "config/platform.json").read_text())
-        for uuid in self.config["enabled_extensions"]:
+        for uuid in self.p.default_extensions():
             meta = json.loads((self.root / f"usr/share/gnome-shell/extensions/{uuid}/metadata.json").read_text())
             self.assertEqual(meta["uuid"], uuid)
             self.assertEqual(meta["shell-version"], platform["gnome_shell"]["supported_versions"])
@@ -132,9 +137,13 @@ class PayloadTests(unittest.TestCase):
 
     def test_layout_tool_runs_from_installed_location(self):
         tool = self.root / "usr/share/jeronix/scripts/jeronix_layout.py"
-        result = subprocess.run([sys.executable, tool, "validate", self.root / "usr/share/jeronix/layouts/pure.json"],
-                                capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
+        # On an installed system the extensions are in /usr/share; here they
+        # are in the payload tree.
+        env = dict(os.environ, JERONIX_EXTENSION_DIRS=str(self.root / "usr/share/gnome-shell/extensions"))
+        for layout in sorted((self.root / "usr/share/jeronix/layouts").glob("*.json")):
+            result = subprocess.run([sys.executable, tool, "validate", layout], capture_output=True, text=True,
+                                    env=env)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

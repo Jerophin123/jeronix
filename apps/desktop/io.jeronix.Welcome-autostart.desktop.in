@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Welcome to JERONIX
+Comment=First-run tour, shown once per user
+Exec=@PYTHON@ @APPS@/welcome/welcome.py --first-run
+Icon=io.jeronix.Welcome
+NoDisplay=true
+X-GNOME-Autostart-Phase=Applications
+X-GNOME-Autostart-Delay=3

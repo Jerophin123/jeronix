@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=System Information
+GenericName=System Information
+Comment=JERONIX, hardware and desktop details, and a support report
+Exec=@PYTHON@ @APPS@/system_info/sysinfo.py
+Icon=io.jeronix.SystemInfo
+Categories=GTK;System;Monitor;
+Keywords=about;system;hardware;version;report;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

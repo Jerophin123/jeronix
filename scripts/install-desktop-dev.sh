@@ -41,6 +41,8 @@ wallpaper_in_use() {
         value="$(gsettings get $key 2>/dev/null || true)"
         [[ "$value" == *"$wallpaper_dir/"* ]] && return 0
     done
+    # Removing an icon theme that is in use leaves applications without icons.
+    [[ "$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null)" == "'JERONIX'" ]] && return 0
     return 1
 }
 
@@ -50,7 +52,7 @@ if [[ $remove -eq 1 ]]; then
         exit 0
     fi
     if [[ $force -eq 0 ]] && wallpaper_in_use; then
-        echo "A JERONIX wallpaper is still set. Restore your previous settings first:" >&2
+        echo "A JERONIX wallpaper or the JERONIX icon theme is still in use. Restore your previous settings first:" >&2
         echo "  scripts/jeronix_layout.py restore" >&2
         echo "or re-run with --force to remove anyway." >&2
         exit 1
@@ -65,7 +67,7 @@ if [[ $remove -eq 1 ]]; then
         rm -rf -- "$path"
     done < "$manifest"
     rm -f -- "$manifest"
-    rmdir --ignore-fail-on-non-empty "$data/jeronix" 2>/dev/null || true
+    find "$data/jeronix" -depth -type d -empty -delete 2>/dev/null || true
     echo "removed JERONIX desktop identity from $data"
     exit 0
 fi
@@ -110,6 +112,13 @@ installed+=("$properties")
 while IFS= read -r icon; do
     put "$build/icons/hicolor/$icon" "$data/icons/hicolor/$icon"
 done < <(cd "$build/icons/hicolor" && find . -type f | sed 's|^\./||' | sort)
+put "$build/icons/JERONIX" "$data/icons/JERONIX"
+
+# Applications, their desktop entries and shared data (tokens, layouts,
+# layout tool). No autostart entry for development installs.
+while IFS= read -r path; do
+    installed+=("$path")
+done < <(python3 packaging/jeronix_apps.py "$data" --python "$(command -v python3)")
 
 mkdir -p "$(dirname "$manifest")"
 printf '%s\n' "${installed[@]}" > "$manifest"

@@ -431,6 +431,9 @@ def build_icons(tokens, out):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ICONS / source, target)
         built.append(target)
+    # The JERONIX icon theme (and the JERONIX app icons in hicolor).
+    import jeronix_icons
+    built += jeronix_icons.build(tokens, out)
     return built
 
 

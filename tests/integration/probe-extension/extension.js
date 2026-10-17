@@ -64,6 +64,9 @@ const IFACE = `
     <method name="SetOverview">
       <arg type="b" direction="in" name="visible"/>
     </method>
+    <method name="PressKeys">
+      <arg type="s" direction="in" name="combo"/>
+    </method>
   </interface>
 </node>`;
 
@@ -182,6 +185,21 @@ class Probe {
         else if (action === 'minimize')
             win.minimize();
         return true;
+    }
+
+    // 'Super+j': modifiers are held while the last key is pressed.
+    PressKeys(combo) {
+        if (!this._keyboard) {
+            const seat = Clutter.get_default_backend().get_default_seat();
+            this._keyboard = seat.create_virtual_device(Clutter.InputDeviceType.KEYBOARD_DEVICE);
+        }
+        const names = {Super: 'Super_L', Ctrl: 'Control_L', Alt: 'Alt_L', Shift: 'Shift_L'};
+        const keyvals = combo.split('+').map(k => Clutter[`KEY_${names[k] ?? k}`]);
+        const time = () => global.get_current_time() * 1000;
+        for (const k of keyvals)
+            this._keyboard.notify_keyval(time(), k, Clutter.KeyState.PRESSED);
+        for (const k of [...keyvals].reverse())
+            this._keyboard.notify_keyval(time(), k, Clutter.KeyState.RELEASED);
     }
 
     SetOverview(visible) {

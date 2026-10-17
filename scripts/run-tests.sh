@@ -23,7 +23,8 @@ fi
 
 if [[ "$suite" == integration || "$suite" == all ]]; then
     for t in tests/integration/extension_lifecycle.py tests/integration/theme_lifecycle.py \
-             tests/integration/desktop_lifecycle.py; do
+             tests/integration/desktop_lifecycle.py tests/integration/apps_lifecycle.py \
+             tests/integration/layouts_lifecycle.py; do
         echo "==> python3 $t"
         python3 "$t"
         rc=$?

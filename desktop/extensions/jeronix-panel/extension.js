@@ -212,6 +212,10 @@ export default class JeronixPanelExtension extends Extension {
             this);
         this._syncOptional();
         Main.panel.add_style_class_name('jeronix-panel');
+
+        Main.wm.addKeybinding('launcher-shortcut', this._settings, Meta.KeyBindingFlags.NONE,
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+            () => launchApp(JERONIX_APPS.launcher));
     }
 
     _syncOptional() {
@@ -239,6 +243,7 @@ export default class JeronixPanelExtension extends Extension {
     }
 
     disable() {
+        Main.wm.removeKeybinding('launcher-shortcut');
         Main.panel.remove_style_class_name('jeronix-panel');
         this._settings.disconnectObject(this);
         this._activities.container.visible = true;

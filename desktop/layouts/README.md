@@ -1,43 +1,51 @@
 # Layouts
 
-A layout is a versioned JSON file of GSettings values, applied and reverted
-by [scripts/jeronix_layout.py](../../scripts/jeronix_layout.py). Layouts
-are data only: they cannot run commands, and they can't enable or disable
-extensions. The tool writes only the keys in its allowlist (`ALLOWED`) and
-checks every value against the installed GSettings schema before it changes
-anything.
+A layout is a versioned JSON file of GSettings values and extension switches.
+It is applied and reverted by
+[scripts/jeronix_layout.py](../../scripts/jeronix_layout.py) and by the
+Layout Studio and Welcome apps. Layouts are data only. They cannot run
+commands, can write only allowlisted keys (`ALLOWED`), and can switch only
+allowlisted extensions (`SWITCHABLE`: the JERONIX extensions, Ubuntu's dock
+and desktop icons). Every value is checked against the installed schema
+before anything changes, and an extension is enabled only if it is
+installed.
 
-This is the first layout configuration, not a layout manager. Layout Studio
-(Milestone 5) will build presets, previews and extension switching on top
-of this format.
-
-## Format (schema 1)
+## Format (schema 2)
 
 | Field | Meaning |
 | --- | --- |
-| `schema` | Format version, currently `1` |
-| `id`, `name`, `version`, `description` | Identity. `version` is semver |
+| `schema` | Format version, currently `2` |
+| `id`, `name`, `version`, `summary`, `description` | Identity. `version` is semver |
 | `gnome_shell` | Supported GNOME Shell majors. Must be a subset of [config/platform.json](../../config/platform.json) |
 | `settings[]` | `{schema, key, value, reason, optional?}`. `value` is JSON, or `{"asset": id}` for installed JERONIX files (`wallpaper-dark`, `wallpaper-light`) |
-| `extensions.recommended[]` | `{uuid, reason}`. Shown to the user, never enabled automatically |
+| `extensions.enable[]`, `extensions.disable[]` | Extensions to switch on or off, through `org.gnome.shell enabled-extensions` / `disabled-extensions`, which are snapshotted. Disabling happens first, so two docks never show at once |
+| `extensions.recommended[]` | `{uuid, reason}`. Shown to the user, never enabled |
 | `limitations[]` | What the layout cannot do |
 
-Settings marked `optional: true` belong to extensions that might not be
-installed (Ubuntu's dock and desktop icons). They are skipped when the
-extension's schema is missing.
+`apply` saves a snapshot of every key it touches, including both extension
+lists. `restore` refuses a snapshot that would switch any extension outside
+`SWITCHABLE`.
 
-## Pure
+## The layouts
 
-[pure.json](pure.json) gives you a streamlined GNOME desktop: the top
-panel, the Activities overview for launching and switching, an on-demand
-dock and an empty desktop.
+| | Pure | Classic | Studio |
+| --- | --- | --- | --- |
+| Dock | floating, bottom, intellihide, 44 px | left edge, always visible (reserves space), 40 px | right edge, autohide, 36 px |
+| Top bar | menu and wordmark, clock, status | menu, workspaces, focused app | symbol-only menu, workspaces, focused app |
+| Workspaces | dynamic, through the overview | dynamic | 4 fixed, Super+1…4 / Super+Shift+1…4, on all monitors |
+| Title bars | close only | minimize, maximize, close | minimize, maximize, close |
+| Hot corner | on | off | off |
+| Alt+Tab | all workspaces | all workspaces | current workspace only |
+| Desktop icons | off | unchanged | off |
+| Ubuntu dock | off | off | off |
 
-### Configured directly (GSettings)
+### Pure settings
 
 | Schema | Key | Pure value |
 | --- | --- | --- |
+| `org.gnome.desktop.interface` | `icon-theme` | `JERONIX` |
 | `org.gnome.desktop.interface` | `color-scheme` | `prefer-dark` |
-| `org.gnome.desktop.interface` | `accent-color` | `slate` (Ubuntu shows it as Yaru sage) |
+| `org.gnome.desktop.interface` | `accent-color` | `orange` (GNOME's closest accent to copper, for third-party apps) |
 | `org.gnome.desktop.interface` | `enable-hot-corners` | `true` |
 | `org.gnome.desktop.interface` | `clock-show-weekday` | `true` |
 | `org.gnome.desktop.wm.preferences` | `button-layout` | `appmenu:close` |
@@ -50,47 +58,34 @@ dock and an empty desktop.
 | `org.gnome.desktop.background` | `picture-options` | `zoom` |
 | `org.gnome.desktop.background` | `primary-color` | `#1E1D1B` |
 | `org.gnome.desktop.screensaver` | `picture-uri` | JERONIX dark wallpaper |
-| `org.gnome.shell.extensions.dash-to-dock` | `dock-fixed` | `false` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `autohide` | `true` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `intellihide` | `true` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `dock-position` | `BOTTOM` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `extend-height` | `false` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `show-trash` | `false` (optional) |
-| `org.gnome.shell.extensions.dash-to-dock` | `show-mounts` | `false` (optional) |
-| `org.gnome.shell.extensions.ding` | `show-home` | `false` (optional) |
-| `org.gnome.shell.extensions.ding` | `show-trash` | `false` (optional) |
-| `org.gnome.shell.extensions.ding` | `show-volumes` | `false` (optional) |
+| `org.gnome.shell.extensions.jeronix-panel` | `show-menu-label` | `true` |
+| `org.gnome.shell.extensions.jeronix-panel` | `show-workspaces` | `false` |
+| `org.gnome.shell.extensions.jeronix-panel` | `show-window-context` | `false` |
+| `org.gnome.shell.extensions.jeronix-panel` | `hide-activities` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `position` | `bottom` |
+| `org.gnome.shell.extensions.jeronix-dock` | `behavior` | `intellihide` |
+| `org.gnome.shell.extensions.jeronix-dock` | `icon-size` | `44` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-running` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-previews` | `true` |
 
-### Provided by an extension
+Classic and Studio list their settings, each with a reason, in
+[classic.json](classic.json) and [studio.json](studio.json).
 
-| Behavior | How |
-| --- | --- |
-| JERONIX panel, menus, Quick Settings, overview, search and notification styling | `jeronix-shell-theme@jeronix` (stylesheet only). You enable it yourself |
+### What a layout cannot do
 
-### Not done by Pure
-
-- **The dock is not disabled.** Ubuntu's dock is the only dock, set to
-  appear on demand. Turning it off, or turning off the desktop-icons
-  extension, means editing the enabled-extensions list. Pure never does
-  that; Layout Studio will offer it as an explicit, reversible step.
-- **No second dock or panel** is added.
-- **Panel contents and overview structure** can't be changed through
-  GSettings. That needs a JERONIX extension in a later milestone.
-
-### Keyboard
-
-Pure keeps every GNOME shortcut. `Super` opens the overview, where typing
-searches; `Super+A` opens the app grid; `Super+PageUp/PageDown` switches
-workspaces; `Super+Left/Right` tiles windows; and `Super+number` launches
-dock items. Every themed control has a visible focus ring.
+- Uninstall anything. Ubuntu's dock and desktop icons are only switched off.
+- Change GNOME's overview structure or the order of items in the panel.
+- Enable an extension that is not installed, or any extension outside
+  `SWITCHABLE`.
 
 ## Applying and reverting
 
-See [docs/development/desktop-identity.md](../../docs/development/desktop-identity.md).
-In short:
+Use Layout Studio, or the command line:
 
 ```sh
-scripts/jeronix_layout.py plan desktop/layouts/pure.json    # dry run
-scripts/jeronix_layout.py apply desktop/layouts/pure.json   # saves a snapshot first
-scripts/jeronix_layout.py restore                           # back to the snapshot
+scripts/jeronix_layout.py plan desktop/layouts/studio.json    # dry run
+scripts/jeronix_layout.py apply desktop/layouts/studio.json   # saves a snapshot first
+scripts/jeronix_layout.py restore                             # back to the snapshot
 ```
+
+See [docs/development/desktop-identity.md](../../docs/development/desktop-identity.md).

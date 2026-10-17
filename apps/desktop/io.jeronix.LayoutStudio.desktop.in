@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Layout Studio
+GenericName=Desktop Layouts
+Comment=Preview, apply and restore JERONIX desktop layouts
+Exec=@PYTHON@ @APPS@/layout_studio/studio.py
+Icon=io.jeronix.LayoutStudio
+Categories=GTK;Settings;DesktopSettings;
+Keywords=layout;dock;panel;workspace;pure;classic;studio;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

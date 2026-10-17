@@ -46,7 +46,8 @@ def remove_tree(path):
         time.sleep(0.3)
 
 
-def run_isolated(script, keyfile_extra="", desktop_files=(), keep_logs=False, prefix="jeronix-shell-"):
+def run_isolated(script, keyfile_extra="", desktop_files=(), keep_logs=False, prefix="jeronix-shell-", prepare=None,
+                 keep_mode_extensions=()):
     """Outer half: sandbox setup, then `script --inner` on a private bus."""
     for tool in ("gnome-shell", "dbus-run-session", "glib-compile-schemas"):
         if not shutil.which(tool):
@@ -61,12 +62,14 @@ def run_isolated(script, keyfile_extra="", desktop_files=(), keep_logs=False, pr
         ext_dir = tmp / "data" / "gnome-shell" / "extensions"
         shutil.copytree(tmp / "build" / "extensions", ext_dir)
         shutil.copytree(HERE / "probe-extension", ext_dir / PROBE_UUID)
+        if prepare:
+            prepare(tmp)
         for name, text in desktop_files:
             (tmp / "data" / "applications" / name).write_text(text, encoding="utf-8")
         mode, mode_extensions = session_mode()
         (tmp / "config" / "glib-2.0" / "settings" / "keyfile").write_text(
             "[org/gnome/shell]\n"
-            f"disabled-extensions={strv(mode_extensions)}\n"
+            f"disabled-extensions={strv([e for e in mode_extensions if e not in keep_mode_extensions])}\n"
             f"{keyfile_extra}\n", encoding="utf-8")
         env = {
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -150,6 +153,14 @@ class Session:
 
     def window(self, title, action):
         return self.probe("WindowAction", (title, action), "(ss)")[0]
+
+    def keys(self, combo):
+        """Presses a combination such as 'Super+j' on a virtual keyboard."""
+        self.probe("PressKeys", (combo,), "(s)")
+
+    def sandbox_env(self):
+        """Environment for helper processes that share the shell's settings."""
+        return dict(os.environ)
 
     # -- helpers -------------------------------------------------------
     def wait_for(self, what, predicate, timeout=20):

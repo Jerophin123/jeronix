@@ -646,7 +646,7 @@ def build(args):
         "architecture": "x86_64 (amd64)",
         "components": {
             "jeronix-desktop": {"version": config["version"], "deb": deb.name,
-                                "extensions": config["enabled_extensions"], "layout": "pure",
+                                "extensions": jeronix_payload.default_extensions(), "layout": "pure",
                                 "files": payload_files},
         },
         "changed_on_iso": [f"/casper/{BASE_LAYER}", *sorted(files), "/md5sum.txt", "/jeronix/*",

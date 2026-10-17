@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=JERONIX Settings
+GenericName=Desktop Settings
+Comment=Appearance, top bar, dock and shortcuts of the JERONIX desktop
+Exec=@PYTHON@ @APPS@/settings/settings.py
+Icon=io.jeronix.Settings
+Categories=GTK;Settings;DesktopSettings;
+Keywords=jeronix;theme;dock;panel;appearance;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

@@ -5,6 +5,8 @@
 // Ubuntu's dock; layouts that use this dock switch Ubuntu's off explicitly
 // and reversibly (see scripts/jeronix_layout.py).
 
+import GLib from 'gi://GLib';
+
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {Dock} from './dock.js';
@@ -12,17 +14,28 @@ import {Dock} from './dock.js';
 export default class JeronixDockExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
-        // Settings change rarely; rebuilding keeps every code path simple.
-        this._settings.connectObject('changed', () => this._rebuild(), this);
+        // A layout changes several keys at once; rebuild once, after the
+        // burst, instead of once per key.
+        this._settings.connectObject('changed', () => this._queueRebuild(), this);
         this._dock = new Dock(this._settings);
     }
 
-    _rebuild() {
-        this._dock?.destroy();
-        this._dock = new Dock(this._settings);
+    _queueRebuild() {
+        if (this._rebuildId)
+            return;
+        this._rebuildId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+            this._rebuildId = 0;
+            this._dock?.destroy();
+            this._dock = new Dock(this._settings);
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     disable() {
+        if (this._rebuildId) {
+            GLib.source_remove(this._rebuildId);
+            this._rebuildId = 0;
+        }
         this._settings.disconnectObject(this);
         this._dock?.destroy();
         this._dock = null;

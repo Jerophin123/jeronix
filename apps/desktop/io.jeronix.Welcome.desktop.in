@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Welcome to JERONIX
+GenericName=Welcome Tour
+Comment=Get started: style, layout and essential shortcuts
+Exec=@PYTHON@ @APPS@/welcome/welcome.py
+Icon=io.jeronix.Welcome
+Categories=GTK;Utility;
+Keywords=welcome;tour;getting started;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

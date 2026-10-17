@@ -18,5 +18,9 @@
       <default>true</default>
       <summary>Replace the Activities button with the JERONIX menu</summary>
     </key>
+    <key name="launcher-shortcut" type="as">
+      <default><![CDATA[['<Super>j']]]></default>
+      <summary>Keyboard shortcut that opens the JERONIX Launcher</summary>
+    </key>
   </schema>
 </schemalist>

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=JERONIX Launcher
+GenericName=Application Launcher
+Comment=Search and open applications
+Exec=@PYTHON@ @APPS@/launcher/launcher.py
+Icon=io.jeronix.Launcher
+Categories=GTK;Utility;
+Keywords=apps;launch;search;start;menu;
+StartupNotify=true
+X-GNOME-UsesNotifications=false

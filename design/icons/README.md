@@ -72,3 +72,26 @@ milestone. Both destinations are system-wide and need root:
 
 Both will be shipped by the Debian packages (Milestone 7) and tested in a
 disposable VM. Don't install them by hand on the development VM.
+
+## The JERONIX icon theme
+
+`scripts/jeronix_icons.py` generates an icon theme named `JERONIX` (the
+build puts it in `out/icons/JERONIX`) from one geometric system: a 128 px
+grid, a 7 px stroke with round caps and joins, and token colors only.
+
+| Context | Style | Icons |
+| --- | --- | --- |
+| Apps | Graphite tile (the logo's), ivory glyph, copper and sage accents | The five JERONIX apps; Files, Settings, Terminal (Ptyxis), Text Editor, Calculator, System Monitor, Image Viewer, plus their generic names (`utilities-terminal`, `system-file-manager`, ...) |
+| Places | Copper folder with an ivory emblem | folder, Documents, Downloads, Music, Pictures, Videos, Templates, Public, Home, Desktop, Trash (empty and full) |
+| Mimetypes | Paper page with a folded corner and a type glyph | text, document, spreadsheet, presentation, image, audio, video, archive, PDF, script/source, program, plus common aliases |
+
+The theme inherits **Yaru, Adwaita, hicolor**, so anything JERONIX does not
+draw (third-party apps, symbolic icons) keeps the system icon and nothing
+shows as missing. It deliberately contains no third-party logos (Firefox,
+Ubuntu, App Center), and snap applications that use absolute icon paths
+keep their own icons. The JERONIX app icons are also installed into
+`hicolor`, so they show under any icon theme.
+
+A cursor theme is **not** included. GNOME 50 still needs compiled Xcursor
+files, and the tool that builds them (`xcursorgen`) isn't available on the
+build machine. Yaru's cursors stay.

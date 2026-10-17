@@ -2,11 +2,18 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Validates, applies and reverts JERONIX desktop layouts.
 
-A layout is declarative data (desktop/layouts/*.json): a list of GSettings
-values. There is no way to run commands from a layout. Only the schema/key
-pairs in ALLOWED can be written, every value is checked against the
-installed GSettings schema (type and range) before anything changes, and
-extensions are never enabled or disabled.
+A layout is declarative data (desktop/layouts/*.json): GSettings values plus
+which JERONIX or Ubuntu shell extensions to switch on or off. There is no
+way to run commands from a layout:
+
+* Only the schema/key pairs in ALLOWED can be written, and every value is
+  checked against the installed GSettings schema (type and range) before
+  anything changes. JERONIX extension settings are read from the schemas
+  that ship inside those extensions.
+* Only the extensions in SWITCHABLE can be enabled or disabled, an
+  extension is enabled only if it is installed, and the change is made by
+  editing org.gnome.shell enabled-extensions/disabled-extensions, which is
+  snapshotted like any other key.
 
     scripts/jeronix_layout.py validate desktop/layouts/pure.json
     scripts/jeronix_layout.py plan     desktop/layouts/pure.json   # dry run
@@ -17,7 +24,7 @@ extensions are never enabled or disabled.
 `apply` first saves the current value of every key it will touch to
 $XDG_STATE_HOME/jeronix/layout-snapshots/. `restore` puts those values back
 (keys that were at their default are reset rather than written). Settings
-take effect immediately; no logout is needed.
+and extension switches take effect immediately; no logout is needed.
 """
 
 import argparse
@@ -31,17 +38,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PLATFORM = ROOT / "config" / "platform.json"
 
-LAYOUT_SCHEMA_VERSION = 1
-SNAPSHOT_SCHEMA_VERSION = 1
+LAYOUT_SCHEMA_VERSION = 2
+SNAPSHOT_SCHEMA_VERSION = 2
 
-# Every key a layout may write. Anything that can launch programs (custom
-# keybindings, autostart, enabled-extensions) is deliberately absent.
+# Every key a layout may write. Nothing that can launch programs (custom
+# keybindings with commands, autostart) is here; the extension lists are
+# handled separately and only for SWITCHABLE extensions.
+WORKSPACE_KEYS = {f"{action}-{n}" for action in ("switch-to-workspace", "move-to-workspace") for n in range(1, 5)}
 ALLOWED = {
     "org.gnome.desktop.interface": {
         "color-scheme", "accent-color", "enable-hot-corners", "clock-show-weekday",
-        "clock-show-seconds", "clock-format", "show-battery-percentage", "enable-animations",
+        "clock-show-seconds", "clock-format", "show-battery-percentage", "enable-animations", "icon-theme",
     },
-    "org.gnome.desktop.wm.preferences": {"button-layout", "focus-mode", "action-double-click-titlebar"},
+    "org.gnome.desktop.wm.preferences": {"button-layout", "focus-mode", "action-double-click-titlebar",
+                                         "num-workspaces"},
+    "org.gnome.desktop.wm.keybindings": WORKSPACE_KEYS,
+    "org.gnome.shell.keybindings": {f"switch-to-application-{n}" for n in range(1, 5)},
+    "org.gnome.shell.app-switcher": {"current-workspace-only"},
     "org.gnome.mutter": {
         "overlay-key", "dynamic-workspaces", "workspaces-only-on-primary", "edge-tiling",
         "center-new-windows",
@@ -53,10 +66,29 @@ ALLOWED = {
         "show-mounts", "dash-max-icon-size",
     },
     "org.gnome.shell.extensions.ding": {"show-home", "show-trash", "show-volumes"},
+    "org.gnome.shell.extensions.jeronix-dock": {
+        "position", "behavior", "icon-size", "show-running", "show-apps-button", "show-previews",
+    },
+    "org.gnome.shell.extensions.jeronix-panel": {
+        "show-menu-label", "show-workspaces", "show-window-context", "hide-activities",
+    },
 }
 
-# Asset ids a layout may reference, relative to $XDG_DATA_HOME. They are
-# installed by scripts/install-desktop-dev.sh (and later by packages).
+# Schemas that ship inside a GNOME Shell extension (schemas/gschemas.compiled).
+EXTENSION_SCHEMAS = {
+    "org.gnome.shell.extensions.jeronix-dock": "jeronix-dock@jeronix",
+    "org.gnome.shell.extensions.jeronix-panel": "jeronix-panel@jeronix",
+}
+
+# Extensions a layout may switch on or off.
+SWITCHABLE = frozenset({
+    "jeronix-shell-theme@jeronix", "jeronix-panel@jeronix", "jeronix-dock@jeronix",
+    "jeronix-quick-settings@jeronix", "ubuntu-dock@ubuntu.com", "ding@rastersoft.com",
+})
+EXTENSION_LIST_KEYS = ("enabled-extensions", "disabled-extensions")
+
+# Asset ids a layout may reference, relative to a data directory. They are
+# installed by scripts/install-desktop-dev.sh or the jeronix-desktop package.
 ASSETS = {
     "wallpaper-dark": "backgrounds/jeronix/jeronix-dark.png",
     "wallpaper-light": "backgrounds/jeronix/jeronix-light.png",
@@ -65,8 +97,9 @@ ASSETS = {
 ID = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 LAYOUT_KEYS = {"schema", "id", "name", "version", "description", "gnome_shell",
-               "settings", "extensions", "limitations"}
+               "settings", "extensions", "limitations", "summary"}
 SETTING_KEYS = {"schema", "key", "value", "reason", "optional"}
+EXTENSION_KEYS = {"enable", "disable", "recommended"}
 
 
 class LayoutError(Exception):
@@ -88,6 +121,18 @@ def data_dirs():
     return [data_home()] + [Path(d) for d in system.split(":") if d]
 
 
+def extension_dir(uuid):
+    """Installed directory of an extension, or None.
+
+    $JERONIX_EXTENSION_DIRS (colon-separated directories holding <uuid>/)
+    is searched first; image builds use it to point at built extensions."""
+    extra = [Path(d) for d in os.environ.get("JERONIX_EXTENSION_DIRS", "").split(":") if d]
+    for base in extra + [d / "gnome-shell" / "extensions" for d in data_dirs()]:
+        if (base / uuid / "metadata.json").is_file():
+            return base / uuid
+    return None
+
+
 def asset_path(asset_id, data_dir=None):
     """Where an asset lives. With data_dir (used when building images) that
     directory is assumed; otherwise the first installed copy wins, falling
@@ -106,7 +151,36 @@ def asset_uri(asset_id, data_dir=None):
     return asset_path(asset_id, data_dir).as_uri()
 
 
+def icon_theme_installed(name):
+    """Whether an icon theme exists (an unknown theme makes GTK fall back
+    to hicolor, which would look broken)."""
+    if not isinstance(name, str) or "/" in name or name.startswith("."):
+        return False
+    bases = [Path.home() / ".icons"] + [d / "icons" for d in data_dirs()]
+    return any((b / name / "index.theme").is_file() for b in bases)
+
+
 # -- structural validation (no GSettings needed) ----------------------------
+
+def _check_extensions(ext):
+    problems = []
+    if not isinstance(ext, dict):
+        return ["extensions must be an object"]
+    problems += [f"extensions: unknown field {k!r}" for k in sorted(set(ext) - EXTENSION_KEYS)]
+    for field in ("enable", "disable"):
+        uuids = ext.get(field, [])
+        if not isinstance(uuids, list) or not all(isinstance(u, str) for u in uuids):
+            problems.append(f"extensions.{field} must be a list of UUIDs")
+            continue
+        problems += [f"extensions.{field}: {u} may not be switched by a layout"
+                     for u in uuids if u not in SWITCHABLE]
+    if set(ext.get("enable", [])) & set(ext.get("disable", [])):
+        problems.append("extensions: the same UUID is both enabled and disabled")
+    for rec in ext.get("recommended", []):
+        if not isinstance(rec, dict) or set(rec) != {"uuid", "reason"}:
+            problems.append("extensions.recommended entries need exactly uuid and reason")
+    return problems
+
 
 def check_structure(layout):
     """Returns a list of problems with the layout document itself."""
@@ -129,6 +203,8 @@ def check_structure(layout):
     if not isinstance(layout["gnome_shell"], list) or not layout["gnome_shell"] \
             or not set(layout["gnome_shell"]) <= set(supported):
         problems.append(f"gnome_shell must be a non-empty subset of {supported} (config/platform.json)")
+    if "extensions" in layout:
+        problems += _check_extensions(layout["extensions"])
     if not isinstance(layout["settings"], list) or not layout["settings"]:
         return problems + ["settings must be a non-empty list"]
     seen = set()
@@ -155,9 +231,6 @@ def check_structure(layout):
                 problems.append(f"{where}: object values must be {{\"asset\": one of {sorted(ASSETS)}}}")
         elif not isinstance(value, (bool, int, float, str, list)):
             problems.append(f"{where}: unsupported value type")
-    for ext in layout.get("extensions", {}).get("recommended", []):
-        if not isinstance(ext, dict) or set(ext) != {"uuid", "reason"}:
-            problems.append("extensions.recommended entries need exactly uuid and reason")
     return problems
 
 
@@ -172,6 +245,17 @@ def load_layout(path):
     return layout
 
 
+def list_layouts(directory):
+    """(path, layout) for every valid layout in a directory, by name."""
+    found = []
+    for path in sorted(Path(directory).glob("*.json")):
+        try:
+            found.append((path, load_layout(path)))
+        except LayoutError:
+            continue
+    return found
+
+
 # -- GSettings ---------------------------------------------------------------
 
 def _gio():
@@ -179,10 +263,30 @@ def _gio():
     return Gio, GLib
 
 
+def lookup_schema(schema_id):
+    """SettingsSchema for schema_id, or None if not installed."""
+    Gio, _ = _gio()
+    default = Gio.SettingsSchemaSource.get_default()
+    if schema_id in EXTENSION_SCHEMAS:
+        ext = extension_dir(EXTENSION_SCHEMAS[schema_id])
+        if ext is None or not (ext / "schemas" / "gschemas.compiled").is_file():
+            return None
+        source = Gio.SettingsSchemaSource.new_from_directory(str(ext / "schemas"), default, False)
+        return source.lookup(schema_id, False)
+    return default.lookup(schema_id, True) if default else None
+
+
+def settings_for(schema_id):
+    Gio, _ = _gio()
+    schema = lookup_schema(schema_id)
+    if schema is None:
+        raise LayoutError(f"schema {schema_id} is not installed")
+    return Gio.Settings.new_full(schema, None, None)
+
+
 def schema_key(schema_id, key):
     """(SettingsSchema, SettingsSchemaKey) or None if the schema isn't installed."""
-    Gio, _ = _gio()
-    schema = Gio.SettingsSchemaSource.get_default().lookup(schema_id, True)
+    schema = lookup_schema(schema_id)
     if schema is None:
         return None
     if not schema.has_key(key):
@@ -230,16 +334,24 @@ def resolve(layout, need_assets=True, data_dir=None):
                 if s.get("optional"):
                     skipped.append(name)
                     continue
-                raise LayoutError(f"schema {s['schema']} is not installed")
+                hint = " (install the JERONIX extensions first)" if s["schema"] in EXTENSION_SCHEMAS else ""
+                raise LayoutError(f"schema {s['schema']} is not installed{hint}")
             value = s["value"]
             if isinstance(value, dict):
                 path = asset_path(value["asset"], data_dir)
                 value = path.as_uri()
                 if need_assets and not path.is_file():
                     raise LayoutError(f"asset {path} is missing; run scripts/install-desktop-dev.sh first")
+            if (s["schema"], s["key"]) == ("org.gnome.desktop.interface", "icon-theme") and need_assets \
+                    and not icon_theme_installed(value):
+                raise LayoutError(f"icon theme {value!r} is not installed")
             changes.append({"schema": s["schema"], "key": s["key"], "variant": to_variant(value, found[1])})
         except LayoutError as e:
             problems.append(f"{name}: {e}")
+    ext = layout.get("extensions", {})
+    for uuid in ext.get("enable", []):
+        if extension_dir(uuid) is None:
+            problems.append(f"extension {uuid} is not installed, so the layout cannot enable it")
     if problems:
         raise LayoutError("layout does not fit this system:\n  " + "\n  ".join(problems))
     return changes, skipped
@@ -247,10 +359,47 @@ def resolve(layout, need_assets=True, data_dir=None):
 
 def current(schema_id, key):
     """(user_value_text_or_None, effective_value_text)."""
-    Gio, _ = _gio()
-    settings = Gio.Settings.new(schema_id)
+    settings = settings_for(schema_id)
     user = settings.get_user_value(key)
     return (user.print_(False) if user is not None else None), settings.get_value(key).print_(False)
+
+
+# -- extension lists -----------------------------------------------------------
+
+def extension_lists():
+    shell = settings_for("org.gnome.shell")
+    return list(shell.get_strv("enabled-extensions")), list(shell.get_strv("disabled-extensions"))
+
+
+def switched_lists(layout, enabled, disabled):
+    """New (enabled, disabled) lists after the layout's switches; order kept."""
+    ext = layout.get("extensions", {})
+    on, off = set(ext.get("enable", [])), set(ext.get("disable", []))
+    new_enabled = [u for u in enabled if u not in off] + [u for u in ext.get("enable", []) if u not in enabled]
+    new_disabled = [u for u in disabled if u not in on] + [u for u in ext.get("disable", []) if u not in disabled]
+    return new_enabled, new_disabled
+
+
+def describe(path, data_dir=None):
+    """Structured dry run: what apply would change.
+
+    Returns {"layout", "settings": [...], "extensions": [...], "skipped": [...]}.
+    """
+    layout = load_layout(path)
+    changes, skipped = resolve(layout, need_assets=False, data_dir=data_dir)
+    rows = []
+    for c in changes:
+        _, effective = current(c["schema"], c["key"])
+        new = c["variant"].print_(False)
+        rows.append({"schema": c["schema"], "key": c["key"], "current": effective, "new": new,
+                     "changed": effective != new})
+    enabled, disabled = extension_lists()
+    ext_rows = []
+    for action in ("enable", "disable"):
+        for uuid in layout.get("extensions", {}).get(action, []):
+            already = (uuid in enabled and uuid not in disabled) if action == "enable" else uuid in disabled
+            ext_rows.append({"uuid": uuid, "action": action, "changed": not already})
+    return {"layout": layout, "settings": rows, "extensions": ext_rows, "skipped": skipped}
 
 
 # -- commands ------------------------------------------------------------------
@@ -260,6 +409,10 @@ def take_snapshot(layout, changes):
     for c in changes:
         user, _ = current(c["schema"], c["key"])
         entries.append({"schema": c["schema"], "key": c["key"], "user_value": user})
+    if layout.get("extensions", {}).get("enable") or layout.get("extensions", {}).get("disable"):
+        for key in EXTENSION_LIST_KEYS:
+            user, _ = current("org.gnome.shell", key)
+            entries.append({"schema": "org.gnome.shell", "key": key, "user_value": user})
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     snap = {"schema": SNAPSHOT_SCHEMA_VERSION, "layout": layout["id"], "layout_version": layout["version"],
             "created": stamp, "entries": entries}
@@ -275,9 +428,22 @@ def take_snapshot(layout, changes):
 def write_values(changes):
     Gio, _ = _gio()
     for c in changes:
-        settings = Gio.Settings.new(c["schema"])
-        if not settings.set_value(c["key"], c["variant"]):
+        if not settings_for(c["schema"]).set_value(c["key"], c["variant"]):
             raise LayoutError(f"{c['schema']} {c['key']} is not writable")
+    Gio.Settings.sync()
+
+
+def write_extension_switches(layout):
+    Gio, _ = _gio()
+    ext = layout.get("extensions", {})
+    if not (ext.get("enable") or ext.get("disable")):
+        return
+    enabled, disabled = switched_lists(layout, *extension_lists())
+    shell = settings_for("org.gnome.shell")
+    # Disable first so a replacement (Ubuntu dock -> JERONIX dock) never
+    # shows two docks at once.
+    shell.set_strv("disabled-extensions", disabled)
+    shell.set_strv("enabled-extensions", enabled)
     Gio.Settings.sync()
 
 
@@ -287,31 +453,33 @@ def apply(path, out=print):
     snap = take_snapshot(layout, changes)
     try:
         write_values(changes)
+        write_extension_switches(layout)
     except Exception:
         restore(snap, out=lambda *_: None)
         raise
-    out(f"applied layout {layout['name']} {layout['version']}: {len(changes)} settings")
+    ext = layout.get("extensions", {})
+    out(f"applied layout {layout['name']} {layout['version']}: {len(changes)} settings, "
+        f"{len(ext.get('enable', []))} extensions enabled, {len(ext.get('disable', []))} disabled")
     for name in skipped:
         out(f"  skipped (schema not installed): {name}")
-    for ext in layout.get("extensions", {}).get("recommended", []):
-        out(f"  recommended extension (not enabled automatically): {ext['uuid']}")
+    for rec in ext.get("recommended", []):
+        out(f"  recommended extension (not enabled automatically): {rec['uuid']}")
     out(f"previous values saved to {snap}")
     out(f"undo with: scripts/jeronix_layout.py restore {snap}")
     return snap
 
 
 def plan(path, out=print):
-    layout = load_layout(path)
-    changes, skipped = resolve(layout, need_assets=False)
+    d = describe(path)
+    layout = d["layout"]
     out(f"layout {layout['name']} {layout['version']} would change:")
-    for c in changes:
-        _, effective = current(c["schema"], c["key"])
-        new = c["variant"].print_(False)
-        mark = " " if effective == new else "*"
-        out(f" {mark} {c['schema']} {c['key']}: {effective} -> {new}")
-    for name in skipped:
+    for r in d["settings"]:
+        out(f" {'*' if r['changed'] else ' '} {r['schema']} {r['key']}: {r['current']} -> {r['new']}")
+    for r in d["extensions"]:
+        out(f" {'*' if r['changed'] else ' '} extension {r['uuid']}: {r['action']}")
+    for name in d["skipped"]:
         out(f"   skipped (schema not installed): {name}")
-    return changes
+    return d
 
 
 def load_snapshot(path):
@@ -319,12 +487,15 @@ def load_snapshot(path):
         snap = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
         raise LayoutError(f"cannot read snapshot {path}: {e}") from e
-    if not isinstance(snap, dict) or snap.get("schema") != SNAPSHOT_SCHEMA_VERSION \
+    if not isinstance(snap, dict) or snap.get("schema") not in (1, SNAPSHOT_SCHEMA_VERSION) \
             or not isinstance(snap.get("entries"), list):
         raise LayoutError(f"{path} is not a JERONIX layout snapshot")
     for e in snap["entries"]:
-        if not isinstance(e, dict) or set(e) != {"schema", "key", "user_value"} \
-                or e["key"] not in ALLOWED.get(e["schema"], ()):
+        if not isinstance(e, dict) or set(e) != {"schema", "key", "user_value"}:
+            raise LayoutError(f"{path}: malformed entry {e!r}")
+        allowed = e["key"] in ALLOWED.get(e["schema"], ()) or \
+            (e["schema"] == "org.gnome.shell" and e["key"] in EXTENSION_LIST_KEYS)
+        if not allowed:
             raise LayoutError(f"{path}: entry {e!r} is not an allowed layout setting")
     return snap
 
@@ -332,6 +503,15 @@ def load_snapshot(path):
 def list_snapshots():
     directory = snapshot_dir()
     return sorted(directory.glob("*.json")) if directory.is_dir() else []
+
+
+def _check_extension_restore(key, restored, current_value):
+    """A restored extension list may only differ from the current one in
+    SWITCHABLE extensions, so an edited snapshot cannot enable others."""
+    changed = set(restored) ^ set(current_value)
+    foreign = sorted(changed - SWITCHABLE)
+    if foreign:
+        raise LayoutError(f"snapshot would change {key} for non-JERONIX extensions {foreign}; refusing")
 
 
 def restore(path=None, out=print):
@@ -342,21 +522,34 @@ def restore(path=None, out=print):
             raise LayoutError(f"no snapshots in {snapshot_dir()}")
         path = snaps[-1]
     snap = load_snapshot(path)
+    plan_ = []
     for e in snap["entries"]:
         found = schema_key(e["schema"], e["key"])
         if found is None:
             continue
-        settings = Gio.Settings.new(e["schema"])
-        if e["user_value"] is None:
-            settings.reset(e["key"])
-        else:
+        variant = None
+        if e["user_value"] is not None:
             try:
                 variant = GLib.Variant.parse(found[1].get_value_type(), e["user_value"], None, None)
             except GLib.Error as err:
                 raise LayoutError(f"{e['schema']} {e['key']}: bad saved value: {err.message}") from err
+        if e["schema"] == "org.gnome.shell" and e["key"] in EXTENSION_LIST_KEYS:
+            settings = settings_for("org.gnome.shell")
+            restored = variant.unpack() if variant is not None else \
+                settings.get_default_value(e["key"]).unpack()
+            _check_extension_restore(e["key"], restored, settings.get_strv(e["key"]))
+        plan_.append((e, variant))
+    # Extension lists last, mirroring apply.
+    plan_.sort(key=lambda ev: ev[0]["key"] in EXTENSION_LIST_KEYS)
+    for e, variant in plan_:
+        settings = settings_for(e["schema"])
+        if variant is None:
+            settings.reset(e["key"])
+        else:
             settings.set_value(e["key"], variant)
     Gio.Settings.sync()
-    out(f"restored {len(snap['entries'])} settings from {path}")
+    out(f"restored {len(plan_)} settings from {path}")
+    return path
 
 
 def main(argv=None):
