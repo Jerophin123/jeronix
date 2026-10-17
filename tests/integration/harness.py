@@ -154,6 +154,12 @@ class Session:
     def window(self, title, action):
         return self.probe("WindowAction", (title, action), "(ss)")[0]
 
+    def click(self, x, y):
+        self.probe("Click", (float(x), float(y)), "(dd)")
+
+    def set_setting(self, schema, key, value):
+        self.probe("SetSetting", (schema, key, value), "(sss)")
+
     def keys(self, combo):
         """Presses a combination such as 'Super+j' on a virtual keyboard."""
         self.probe("PressKeys", (combo,), "(s)")

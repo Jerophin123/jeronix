@@ -84,3 +84,37 @@ export class TopBar {
         return this._hidden;
     }
 }
+
+// Hides GNOME's dash (the second dock with the app grid button) in the
+// overview, which then shows only windows and workspaces, like Task View.
+// The overview lays the dash out at its preferred height, so a fixed
+// height of 0 gives its space back to the workspaces.
+export class OverviewDash {
+    constructor() {
+        this._hidden = false;
+    }
+
+    hide() {
+        const dash = Main.overview.dash;
+        if (this._hidden || !dash)
+            return;
+        this._heightSet = dash.natural_height_set;
+        this._height = dash.height;
+        dash.hide();
+        dash.height = 0;
+        this._hidden = true;
+    }
+
+    restore() {
+        if (!this._hidden)
+            return;
+        const dash = Main.overview.dash;
+        dash.height = this._heightSet ? this._height : -1;
+        dash.show();
+        this._hidden = false;
+    }
+
+    get hidden() {
+        return this._hidden;
+    }
+}

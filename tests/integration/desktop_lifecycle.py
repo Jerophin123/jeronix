@@ -32,6 +32,11 @@ StartupWMClass=io.jeronix.TestWindow
 """
 
 
+def placed(menu):
+    """The open Start menu has been allocated (its rects are real numbers)."""
+    return all(v is not None for k in ("rect", "footerRect") for v in (menu[k] or [None]))
+
+
 def run(s):
     s.start()
     print(f"# session mode: {s.mode}")
@@ -82,11 +87,36 @@ def run(s):
     s.check("GNOME's top bar is hidden while the taskbar carries the tray",
             dock["topBarHidden"] and state["panelVisible"] is False)
 
-    # Start menu: a shell popup with pinned apps; typing searches.
-    s.keys("Super+j")
-    start = s.wait_for("Start menu", lambda: (d := s.debug(DOCK))["startMenuOpen"] and d)
-    s.check("Super+J opens the Start menu showing the pinned apps",
+    # The tray grows (here: a longer clock); the apps must stay centered.
+    s.set_setting("org.gnome.desktop.interface", "clock-show-seconds", "true")
+    s.set_setting("org.gnome.desktop.interface", "clock-show-weekday", "true")
+    wide = s.wait_for("wider tray", lambda: (d := s.debug(DOCK))["trayRect"][2] > tw + 20 and d)
+    time.sleep(1)  # let the bar lay out again
+    wide = s.debug(DOCK)
+    gx, gy, gw, gh = wide["groupRect"]
+    tx, ty, tw, th = wide["trayRect"]
+    s.check(f"apps stay centered when the tray grows (tray {wide['trayRect']}, group {wide['groupRect']})",
+            abs((gx + gw / 2) - (mx + mw / 2)) <= 2 and tx > gx + gw and tx + tw <= mx + mw)
+    s.set_setting("org.gnome.desktop.interface", "clock-show-seconds", "false")
+    s.set_setting("org.gnome.desktop.interface", "clock-show-weekday", "false")
+
+    # Start menu (Windows 11): Super opens it, centered above the taskbar.
+    s.keys("Super")
+    start = s.wait_for("Start menu", lambda: (d := s.debug(DOCK))["startMenuOpen"] and placed(d["startMenu"]) and d)
+    s.check("Super opens the JERONIX Start menu, not GNOME's overview",
+            start["superKeyTaken"] and s.state()["overview"] is False)
+    s.check("the Start menu shows the pinned apps",
             start["startMenuTitle"] == "Pinned" and start["startMenuApps"][:3] == FAVORITES)
+    sx, sy, sw, sh = start["startMenu"]["rect"]
+    s.check(f"the Start menu is centered on the screen ({start['startMenu']['rect']})",
+            abs((sx + sw / 2) - (mx + mw / 2)) <= 2)
+    s.check("the Start menu floats just above the taskbar", 0 <= y - (sy + sh) <= 24)
+    fx, fy, fw, fh = start["startMenu"]["footerRect"]
+    s.check(f"the footer spans the whole menu bottom ({start['startMenu']['footerRect']})",
+            fx == sx and fw == sw and abs((fy + fh) - (sy + sh)) <= 1)
+    s.check(f"the footer offers settings and power actions ({start['startMenu']['actions']})",
+            start["startMenu"]["actions"][:2] == ["Settings", "Lock"])
+    s.check("a Recommended section sits below the pinned apps", start["startMenu"]["recommendedVisible"])
     s.screenshot("01a-start-menu")
     for key in "text":
         s.keys(key)
@@ -97,6 +127,21 @@ def run(s):
     s.keys("Escape")
     s.wait_for("Start menu closed", lambda: not s.debug(DOCK)["startMenuOpen"])
     s.check("Escape closes the Start menu", True)
+
+    # Super+J and the taskbar's Search box open the same Start menu.
+    s.keys("Super+j")
+    s.wait_for("Start menu from Super+J", lambda: s.debug(DOCK)["startMenuOpen"])
+    s.check("Super+J opens the Start menu", True)
+    s.keys("Super")
+    s.wait_for("Start menu closed by Super", lambda: not s.debug(DOCK)["startMenuOpen"])
+    s.check("Super closes the open Start menu", s.state()["overview"] is False)
+    bx, by, bw, bh = s.debug(DOCK)["searchRect"]
+    s.click(bx + bw / 2, by + bh / 2)
+    s.wait_for("Start menu from Search", lambda: s.debug(DOCK)["startMenuOpen"])
+    s.check("the Search box opens the Start menu search, not GNOME's overview", s.state()["overview"] is False)
+    s.screenshot("01c-search")
+    s.keys("Escape")
+    s.wait_for("Start menu closed", lambda: not s.debug(DOCK)["startMenuOpen"])
 
     # macOS-style magnification and label on a favorite that is not running.
     fx, fy, fw, fh = dock["itemRects"][1]
@@ -142,6 +187,9 @@ def run(s):
     # -- overview -------------------------------------------------------------
     s.overview(True)
     s.check("the dock steps aside for the overview (no second dock)", not s.debug(DOCK)["shown"])
+    dash = s.state()["overviewDash"]
+    s.check(f"Task View shows no GNOME dash or app grid button ({dash})",
+            dash["visible"] is False and dash["height"] == 0 and s.debug(DOCK)["overviewDashHidden"])
     s.screenshot("04-overview")
     s.overview(False)
     s.wait_for("dock after overview", lambda: s.debug(DOCK)["shown"])
@@ -184,6 +232,12 @@ def run(s):
     s.check("disabling the dock puts Quick Settings and the clock back in GNOME's top bar",
             state["panelVisible"] is True and state["quickSettingsParent"] == "panelRight"
             and state["dateMenuParent"] == "panelCenter")
+    s.check("disabling the dock gives the overview its dash back", state["overviewDash"]["visible"] is True)
+    s.keys("Super")
+    s.wait_for("overview from Super", lambda: s.state()["overview"])
+    s.check("disabling the dock gives the Super key back to GNOME's overview", True)
+    s.overview(False)
+    s.wait_for("overview closed", lambda: not s.state()["overview"])
     s.disable(PANEL)
     s.check("disabling the panel restores the Activities button",
             s.debug(PANEL) is None and s.state()["activitiesVisible"] is True)

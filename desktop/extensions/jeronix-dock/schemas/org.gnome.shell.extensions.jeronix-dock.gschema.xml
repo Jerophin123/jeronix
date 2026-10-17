@@ -74,6 +74,14 @@
       <default><![CDATA[['<Super>j']]]></default>
       <summary>Keyboard shortcut that opens the Start menu</summary>
     </key>
+    <key name="super-key-start-menu" type="b">
+      <default>true</default>
+      <summary>The Super key opens the Start menu instead of the overview</summary>
+    </key>
+    <key name="hide-overview-dash" type="b">
+      <default>true</default>
+      <summary>Hide GNOME's dash and app grid button in the overview (Task View)</summary>
+    </key>
     <key name="magnify" type="b">
       <default>true</default>
       <summary>Magnify icons under the pointer</summary>

@@ -67,6 +67,15 @@ const IFACE = `
     <method name="PressKeys">
       <arg type="s" direction="in" name="combo"/>
     </method>
+    <method name="SetSetting">
+      <arg type="s" direction="in" name="schema"/>
+      <arg type="s" direction="in" name="key"/>
+      <arg type="s" direction="in" name="value"/>
+    </method>
+    <method name="Click">
+      <arg type="d" direction="in" name="x"/>
+      <arg type="d" direction="in" name="y"/>
+    </method>
   </interface>
 </node>`;
 
@@ -202,6 +211,21 @@ class Probe {
             this._keyboard.notify_keyval(time(), k, Clutter.KeyState.RELEASED);
     }
 
+    // Any GSettings key, value in GVariant text form (e.g. 'true').
+    SetSetting(schema, key, value) {
+        const settings = new Gio.Settings({schema_id: schema});
+        const type = settings.settings_schema.get_key(key).get_value_type();
+        settings.set_value(key, GLib.Variant.parse(type, value, null, null));
+    }
+
+    // Moves the virtual pointer and clicks the primary button.
+    Click(x, y) {
+        this.MovePointer(x, y);
+        const time = () => global.get_current_time() * 1000;
+        this._pointer.notify_button(time(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.PRESSED);
+        this._pointer.notify_button(time(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
+    }
+
     SetOverview(visible) {
         if (visible)
             Main.overview.show();
@@ -223,6 +247,8 @@ class Probe {
             workspaces: global.workspace_manager.n_workspaces,
             activitiesVisible: Main.panel.statusArea.activities?.container.visible ?? null,
             panelVisible: Main.panel.visible,
+            overviewDash: Main.overview.dash
+                ? {visible: Main.overview.dash.visible, height: Math.round(Main.overview.dash.height)} : null,
             quickSettingsParent: Main.panel.statusArea.quickSettings?.container.get_parent()?.name ||
                 Main.panel.statusArea.quickSettings?.container.get_parent()?.style_class || null,
             dateMenuParent: Main.panel.statusArea.dateMenu?.container.get_parent()?.name ||

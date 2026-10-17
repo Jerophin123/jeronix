@@ -130,6 +130,23 @@ export function fitIconSize({items, extras, preferred, minimum, available}) {
 }
 
 /** Insertion index for a drop at coord, given the item centers in order. */
+// Gap kept between the app group and the tray when the group is pushed left.
+export const TRAY_GAP = 8;
+
+/**
+ * Horizontal layout of the taskbar row (offsets within the bar's content
+ * box). The tray sits at the right end. The app group is centered on the
+ * whole bar (not on the space left of the tray), like Windows 11, unless
+ * that would run into the tray: then it moves left just enough.
+ */
+export function taskbarRow({width, groupWidth, trayWidth, centered}) {
+    const trayX = Math.max(0, width - trayWidth);
+    const limit = trayWidth > 0 ? trayX - TRAY_GAP : width;
+    let groupX = centered ? Math.round((width - groupWidth) / 2) : 0;
+    groupX = Math.max(0, Math.min(groupX, limit - groupWidth));
+    return {groupX, groupWidth: Math.max(0, Math.min(groupWidth, limit - groupX)), trayX};
+}
+
 export function dropIndex(centers, coord) {
     let i = 0;
     while (i < centers.length && coord > centers[i])

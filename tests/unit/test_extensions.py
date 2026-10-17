@@ -110,16 +110,20 @@ class JavaScriptSyntaxTests(unittest.TestCase):
     def test_extension_js_parses(self):
         # gjs parses a module before resolving its imports, so syntax errors
         # are reported first; the import of Shell-only modules
-        # (resource:///org/gnome/shell/...) then fails, which is expected
-        # outside GNOME Shell. Extension modules have no top-level side effects.
+        # (resource:///org/gnome/shell/...) or of the typelibs GNOME Shell
+        # ships privately (Clutter, Meta, St, ...) then fails, which is
+        # expected outside GNOME Shell. Extension modules have no top-level
+        # side effects.
+        shell_only = ["resource:///org/gnome/shell/"] + [
+            f"Typelib file for namespace '{ns}'" for ns in ("Clutter", "Cogl", "Meta", "Mtk", "Shell", "St")]
         for js in sorted(EXTENSIONS.rglob("*.js")):
             with self.subTest(file=str(js.relative_to(ROOT))):
                 result = subprocess.run(["gjs", "-m", str(js)],
                                         capture_output=True, text=True, timeout=30)
                 self.assertNotIn("SyntaxError", result.stderr)
                 if result.returncode != 0:
-                    self.assertIn("resource:///org/gnome/shell/", result.stderr,
-                                  f"unexpected gjs failure:\n{result.stderr}")
+                    self.assertTrue(any(s in result.stderr for s in shell_only),
+                                    f"unexpected gjs failure:\n{result.stderr}")
 
 
 if __name__ == "__main__":

@@ -239,16 +239,29 @@
 }
 
 /* ---- Start menu ------------------------------------------------------------ */
+/* Windows 11 proportions: a 640 x 640 panel floating 12 px above the bar,
+   no pointer arrow; content in the body, actions in a full-width footer. */
+.popup-menu-boxpointer.jeronix-start-menu {
+  -arrow-rise: 0px;
+  -arrow-base: 0px;
+  -arrow-border-radius: @radius-large@;
+  -boxpointer-gap: @space-sm@;
+}
+
 .jeronix-start-menu .popup-menu-content {
   padding: 0;
   border-radius: @radius-large@;
+  box-shadow: @shadow-overlay@;
 }
 
 .jeronix-start {
-  width: 600px;
-  height: 540px;
+  width: 640px;
+  height: 640px;
+}
+
+.jeronix-start-body {
   spacing: @space-sm@;
-  padding: @space-lg@ @space-lg@ 0 @space-lg@;
+  padding: @space-lg@ @space-xl@;
 }
 
 .jeronix-start-search {
@@ -276,7 +289,8 @@
 }
 
 .jeronix-start-header {
-  padding: @space-xs@ @space-xxs@ 0 @space-xxs@;
+  padding: @space-xxs@ @space-xxs@ 0 @space-xxs@;
+  min-height: 28px;
 }
 
 .jeronix-start-title {
@@ -300,23 +314,26 @@
   box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
 }
 
+/* 6 columns of 88 px tiles with 8 px gaps fill the 576 px body. */
 .jeronix-start-grid {
-  spacing-rows: @space-xs@;
+  spacing-rows: @space-xxs@;
   spacing-columns: @space-xs@;
 }
 
 .jeronix-start-tile {
   border-radius: @radius-small@;
-  padding: @space-xs@ @space-xxs@;
-  min-width: 84px;
+  padding: @space-sm@ @space-xxs@ @space-xs@ @space-xxs@;
+  width: 88px;
   transition-duration: @duration-fast@;
 }
 
-.jeronix-start-tile:hover {
+.jeronix-start-tile:hover,
+.jeronix-start-row:hover {
   background-color: @hover@;
 }
 
-.jeronix-start-tile:focus {
+.jeronix-start-tile:focus,
+.jeronix-start-row:focus {
   background-color: @hover@;
   box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
 }
@@ -328,30 +345,69 @@
 .jeronix-start-tile-label {
   color: @text@;
   font-size: @font-caption@;
-  max-width: 84px;
+  max-width: 80px;
 }
 
 .jeronix-start-empty {
   color: @text-muted@;
-  padding: @space-xl@;
+  font-size: @font-caption@;
+  padding: @space-sm@ @space-xxs@;
 }
 
+.jeronix-start-recommended {
+  spacing: @space-xs@;
+}
+
+.jeronix-start-recommended-grid {
+  spacing-rows: @space-xxs@;
+  spacing-columns: @space-xs@;
+}
+
+/* Two columns of 284 px rows with an 8 px gap fill the 576 px body. */
+.jeronix-start-row {
+  width: 284px;
+  border-radius: @radius-small@;
+  padding: @space-xs@ @space-sm@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-start-row-box {
+  spacing: @space-sm@;
+}
+
+.jeronix-start-row-name {
+  color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-medium@;
+}
+
+.jeronix-start-row-detail {
+  color: @text-muted@;
+  font-size: @font-caption@;
+}
+
+/* Footer: spans the whole menu, the user on the left, actions on the right. */
 .jeronix-start-footer {
   background-color: @surface-overlay@;
   border-top: @border-width@ solid @border@;
-  margin: 0 -@space-lg@;
-  padding: @space-sm@ @space-lg@;
+  padding: @space-sm@ @space-xl@;
   spacing: @space-xxs@;
+  min-height: 40px;
   border-radius: 0 0 @radius-large@ @radius-large@;
 }
 
 .jeronix-start-user {
   spacing: @space-sm@;
+}
+
+.jeronix-start-user-name {
   color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-medium@;
 }
 
 .jeronix-start-avatar {
-  icon-size: 24px;
+  icon-size: 28px;
   color: @accent@;
 }
 

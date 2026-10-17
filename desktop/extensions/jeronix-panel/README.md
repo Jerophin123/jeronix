@@ -11,9 +11,10 @@ Quick Settings, accessibility and status indicators are unchanged.
 | **Workspaces** | Numbered pills, with the active one in copper. Click a pill to switch; scroll to step through workspaces |
 | **Focused application** | Icon and name of the focused app. Click it for GNOME's app menu: its windows, new window, pin and quit |
 
-The overview remains reachable from the menu, the Super key and the hot
-corner, so hiding Activities removes no function. Disabling the extension
-puts Activities back.
+The overview remains reachable from the menu, the Super key (unless the
+JERONIX Dock gives Super to its Start menu; its Task View button then opens
+the overview) and the hot corner, so hiding Activities removes no
+function. Disabling the extension puts Activities back.
 
 ## Settings (`org.gnome.shell.extensions.jeronix-panel`)
 

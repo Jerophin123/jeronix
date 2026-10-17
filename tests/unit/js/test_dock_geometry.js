@@ -3,7 +3,7 @@
 
 import System from 'system';
 
-import {Geometry, MARGIN, ITEM_PADDING, fitIconSize, dropIndex} from
+import {Geometry, MARGIN, ITEM_PADDING, fitIconSize, dropIndex, taskbarRow, TRAY_GAP} from
     '../../../desktop/extensions/jeronix-dock/geometry.js';
 
 let failures = 0;
@@ -111,6 +111,29 @@ test('drop index is the insertion point between item centers', () => {
     assertEq(dropIndex(centers, 60), 1, 'between first and second');
     assertEq(dropIndex(centers, 400), 3, 'after last');
     assertEq(dropIndex([], 10), 0, 'empty dock');
+});
+
+test('the taskbar group is centered on the whole bar whatever the tray width', () => {
+    for (const trayWidth of [0, 120, 260]) {
+        const r = taskbarRow({width: 1600, groupWidth: 500, trayWidth, centered: true});
+        assertEq(r.groupX + r.groupWidth / 2, 800, `centered with a ${trayWidth}px tray`);
+        assertEq(r.trayX, 1600 - trayWidth, 'tray at the right end');
+    }
+});
+
+test('a wide group moves left of the tray instead of overlapping it', () => {
+    const r = taskbarRow({width: 1000, groupWidth: 700, trayWidth: 200, centered: true});
+    assertEq(r.groupX + r.groupWidth <= r.trayX - TRAY_GAP, true, 'no overlap');
+    assertEq(r.groupX, 1000 - 200 - TRAY_GAP - 700, 'pushed left just enough');
+    const tight = taskbarRow({width: 600, groupWidth: 700, trayWidth: 200, centered: true});
+    assertEq(tight.groupX, 0, 'starts at the left edge');
+    assertEq(tight.groupWidth, 600 - 200 - TRAY_GAP, 'clipped to the space left of the tray');
+});
+
+test('a left-aligned group starts at the left edge', () => {
+    const r = taskbarRow({width: 1600, groupWidth: 500, trayWidth: 200, centered: false});
+    assertEq(r.groupX, 0, 'start');
+    assertEq(r.trayX, 1400, 'tray');
 });
 
 print(`1..${count}`);

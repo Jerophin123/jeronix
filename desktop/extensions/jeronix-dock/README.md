@@ -18,19 +18,26 @@ taskbar** (`style=taskbar`):
   components, so every control works as before. GNOME's top bar is hidden
   (`hide-top-bar`) and comes back as soon as the extension is disabled or
   the screen locks.
-- **Start menu** (Start button or Super+J): a shell popup, not a window.
-  Search on top (type, then Enter), pinned apps (the dock favorites), All
-  apps, and the user's name with JERONIX Settings, Lock, Log Out and Power
-  Off at the bottom.
-- **Task View** opens GNOME's overview (windows and workspaces), as does
-  the Super key. GNOME doesn't let extensions take over the Super key.
-- Apps are **centered** or **left-aligned** (`alignment`).
+- **Start menu** (Start button, Search box, **Super** or Super+J): a shell
+  popup, not a window, centered on the screen just above a centered
+  taskbar (above the Start button on a left-aligned one). Search on top
+  (type, then Enter), Pinned apps (the dock favorites) in rows of six, All
+  apps, Recommended (your most used apps that aren't pinned), and a footer
+  across the bottom with your name, JERONIX Settings, Lock, Log Out and
+  Power Off. Super or Escape closes it.
+- **Super key**: GNOME's own handler (which opens the overview) is blocked
+  while the extension is enabled and unblocked when it's disabled
+  (`super-key-start-menu`).
+- **Task View** opens the overview with windows and workspaces only:
+  GNOME's dash and app grid button are hidden there (`hide-overview-dash`)
+  and come back on disable.
+- Apps are **centered** on the whole bar or **left-aligned** (`alignment`),
+  and stay centered when the tray changes width.
 
 The rest of the bar:
 
-- **Start and Search first** (Windows 11). The JERONIX mark opens the
-  JERONIX Launcher (or GNOME's app grid if the launcher isn't installed).
-  Search opens GNOME's system-wide search for apps, files and settings.
+- **Start, Search and Task View first** (Windows 11). Start and Search
+  both open the JERONIX Start menu; Search opens it ready to type.
 - **Pill indicators** (Windows 11): a short neutral pill under running apps,
   which widens into copper for the focused app.
 - **Magnification** (macOS): the hovered icon grows 35% and its neighbors
@@ -74,6 +81,8 @@ The rest of the bar:
 | `hide-top-bar` | `true` | Hide GNOME's top bar while the bar carries the tray |
 | `show-task-view-button` | `true` | Task View button |
 | `start-menu-shortcut` | `['<Super>j']` | Opens the Start menu |
+| `super-key-start-menu` | `true` | Super opens the Start menu (`false`: GNOME's overview) |
+| `hide-overview-dash` | `true` | Hide GNOME's dash and app grid button in the overview |
 | `show-start-button` | `true` | JERONIX Start button (opens the Start menu) |
 | `show-search-button` | `true` | Search button (GNOME search) |
 | `magnify` | `true` | Magnify icons under the pointer |
@@ -96,6 +105,9 @@ with a snapshot so `scripts/jeronix_layout.py restore` turns it back on.
 ## Tests
 
 `gjs -m tests/unit/js/test_dock_geometry.js` (placement, fitting, drop
-index) and `tests/integration/desktop_lifecycle.py`, which covers
-favorites, running apps, previews, intellihide, edge reveal, overview,
-positions, reserved space and teardown in a real headless GNOME Shell.
+index, taskbar row) and `tests/integration/desktop_lifecycle.py`, which
+covers, in a real headless GNOME Shell: favorites, running apps, centering
+(also after the tray grows), the tray, the Start menu (Super, Super+J,
+Search box, placement, footer, search, closing), previews, intellihide,
+edge reveal, Task View without GNOME's dash, positions, reserved space,
+and teardown (tray, top bar, dash and Super key given back to GNOME).
