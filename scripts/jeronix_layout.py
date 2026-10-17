@@ -49,6 +49,7 @@ ALLOWED = {
     "org.gnome.desktop.interface": {
         "color-scheme", "accent-color", "enable-hot-corners", "clock-show-weekday",
         "clock-show-seconds", "clock-format", "show-battery-percentage", "enable-animations", "icon-theme",
+        "gtk-theme", "font-name", "document-font-name",
     },
     "org.gnome.desktop.wm.preferences": {"button-layout", "focus-mode", "action-double-click-titlebar",
                                          "num-workspaces"},

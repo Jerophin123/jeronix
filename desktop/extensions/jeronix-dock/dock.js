@@ -30,7 +30,10 @@ const LAUNCHER_ID = 'io.jeronix.Launcher.desktop';
 
 const MENU_SIDE = {bottom: St.Side.BOTTOM, left: St.Side.LEFT, right: St.Side.RIGHT};
 
-const MAGNIFY = [1.35, 1.15]; // hovered icon, direct neighbors
+// A touch of macOS: the hovered icon and its neighbors grow a little.
+const MAGNIFY = [1.22, 1.07];
+// The Windows 11 search box is as wide as this many icon tiles.
+const SEARCH_SLOTS = 3;
 const BOUNCE_HEIGHT = 14;
 const BOUNCE_TIME = 170;
 const LABEL_DELAY = 250;
@@ -143,11 +146,20 @@ class Dock extends St.Widget {
             child: new St.Icon({gicon: Gio.icon_new_for_string(`${extensionPath}/icons/jeronix-start.svg`)}),
         });
         this._startButton.connect('clicked', () => this._openLauncher());
+        // Windows 11-style search box on a horizontal bar; icon only on the sides.
+        const searchBox = new St.BoxLayout({style_class: 'jeronix-dock-search-box',
+            y_align: Clutter.ActorAlign.CENTER});
+        this._searchIcon = new St.Icon({icon_name: 'system-search-symbolic', y_align: Clutter.ActorAlign.CENTER});
+        searchBox.add_child(this._searchIcon);
+        if (!this._vertical) {
+            searchBox.add_child(new St.Label({text: _('Search'), style_class: 'jeronix-dock-search-text',
+                y_align: Clutter.ActorAlign.CENTER}));
+        }
         this._searchButton = new St.Button({
-            style_class: 'jeronix-dock-item jeronix-dock-search',
+            style_class: `jeronix-dock-item jeronix-dock-search${this._vertical ? '' : ' jeronix-dock-search-wide'}`,
             can_focus: true,
             accessible_name: _('Search'),
-            child: new St.Icon({icon_name: 'system-search-symbolic'}),
+            child: searchBox,
         });
         this._searchButton.connect('clicked', () => Main.overview.show());
         for (const [button, label] of [[this._startButton, _('Start')], [this._searchButton, _('Search')]]) {
@@ -260,30 +272,59 @@ class Dock extends St.Widget {
         return {favorites, running};
     }
 
+    _createItem(app) {
+        const item = new DockItem(app, MENU_SIDE[this._position], this._position);
+        item.connect('notify::hover', () => this._onItemHover(item));
+        item.connect('menu-state-changed', (i, open) => {
+            this._menuOpen = open;
+            if (open) {
+                this._previews.close();
+                this._hideLabel();
+            }
+            this._sync();
+        });
+        if (this._vertical) {
+            item._dot.x_align = this._position === 'left' ? Clutter.ActorAlign.START : Clutter.ActorAlign.END;
+            item._dot.y_align = Clutter.ActorAlign.CENTER;
+        }
+        if (this._iconSize)
+            item.icon.setIconSize(this._iconSize);
+        return item;
+    }
+
+    // Updates the items in place: only apps that appear or disappear are
+    // created or destroyed, so icons, hover and magnification don't flicker
+    // when other apps start or stop.
     _redisplay() {
         const {favorites, running} = this._apps();
-        this._box.destroy_all_children();
-        const side = MENU_SIDE[this._position];
-        for (const app of [...favorites, ...running]) {
-            const item = new DockItem(app, side, this._position);
-            item.connect('notify::hover', () => this._onItemHover(item));
-            item.connect('menu-state-changed', (i, open) => {
-                this._menuOpen = open;
-                if (open)
-                    this._previews.close();
-                this._sync();
-            });
-            if (this._vertical) {
-                item._dot.x_align = this._position === 'left' ? Clutter.ActorAlign.START : Clutter.ActorAlign.END;
-                item._dot.y_align = Clutter.ActorAlign.CENTER;
+        const wanted = [...favorites, ...running];
+        const wantedIds = new Set(wanted.map(a => a.get_id()));
+        const existing = new Map();
+        let changed = false;
+        for (const item of this._box.get_children()) {
+            if (wantedIds.has(item.app.get_id()) && !existing.has(item.app.get_id())) {
+                existing.set(item.app.get_id(), item);
+            } else {
+                item.destroy();
+                changed = true;
             }
-            this._box.add_child(item);
         }
+        wanted.forEach((app, index) => {
+            let item = existing.get(app.get_id());
+            if (!item) {
+                item = this._createItem(app);
+                this._box.insert_child_at_index(item, index);
+                changed = true;
+            } else if (this._box.get_child_at_index(index) !== item) {
+                this._box.set_child_at_index(item, index);
+            }
+        });
         this._favoriteCount = favorites.length;
         this._separator.visible = this._box.get_n_children() > 0 && this._settings.get_boolean('show-apps-button');
         this._appsButton.visible = this._settings.get_boolean('show-apps-button');
         this._syncFocus();
-        this._relayout();
+        if (!this._geometry || changed)
+            this._relayout();
     }
 
     _syncFocus() {
@@ -312,10 +353,12 @@ class Dock extends St.Widget {
             return;
         const panelHeight = Main.layoutManager.panelBox.height;
         const geometry = new Geometry(this._position, monitor, panelHeight);
-        const buttons = [this._startButton, this._searchButton, this._appsButton].filter(b => b.visible);
+        const searchSlots = this._vertical ? 1 : SEARCH_SLOTS;
+        const extras = [this._startButton, this._appsButton].filter(b => b.visible).length +
+            (this._searchButton.visible ? searchSlots : 0);
         const fit = fitIconSize({
             items: this._box.get_n_children(),
-            extras: buttons.length,
+            extras,
             preferred: this._settings.get_int('icon-size'),
             minimum: MIN_ICON_SIZE,
             available: geometry.available,
@@ -323,11 +366,14 @@ class Dock extends St.Widget {
         this._iconSize = fit.iconSize;
         for (const item of this._box.get_children())
             item.icon.setIconSize(this._iconSize);
-        for (const button of [this._startButton, this._searchButton, this._appsButton]) {
-            const glyph = button === this._startButton ? 0.9 : 0.6;
-            button.child.icon_size = Math.round(this._iconSize * glyph);
-            button.set_size(this._iconSize + ITEM_PADDING, this._iconSize + ITEM_PADDING);
-        }
+        const tile = this._iconSize + ITEM_PADDING;
+        this._startButton.child.icon_size = Math.round(this._iconSize * 0.85);
+        this._appsButton.child.icon_size = Math.round(this._iconSize * 0.6);
+        this._searchIcon.icon_size = Math.round(this._iconSize * 0.55);
+        for (const button of [this._startButton, this._appsButton])
+            button.set_size(tile, tile);
+        // The search box takes its natural width (about SEARCH_SLOTS tiles).
+        this._searchButton.set_size(this._vertical ? tile : -1, tile);
 
         // Overflow scrolls (in a clipping scroll view) instead of shrinking
         // icons below the minimum; otherwise the items sit in the bar itself.

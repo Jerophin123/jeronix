@@ -191,7 +191,8 @@ def theme_variables(tokens, mode, platform):
     v["panel-pressed"] = rgba(p["on-panel"], i["pressed-opacity"] * 2)
     v["selection"] = rgba(p["accent"], i["selected-opacity"] * 1.5)
     v["selected-secondary"] = rgba(p["accent-secondary"], i["selected-opacity"])
-    v["dock-surface"] = rgba(p["surface-raised"], 0.86)  # translucent, macOS-like
+    v["dock-surface"] = rgba(p["surface-raised"], 0.86)  # translucent, Mica-like
+    v["dock-highlight"] = rgba(p["text"], 0.14)  # light top edge of the bar
     # Light popovers need softer shadows than dark ones to look the same.
     shadow_scale = 1.0 if mode == "dark" else 0.5
     for name, spec in tokens["elevation"].items():

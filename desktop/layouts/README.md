@@ -30,7 +30,7 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 
 | | Pure | Classic | Studio |
 | --- | --- | --- | --- |
-| Dock | floating, bottom, intellihide, 44 px | left edge, always visible (reserves space), 40 px | right edge, autohide, 36 px |
+| Dock | Windows 11-style floating taskbar, bottom, always visible, 32 px | left edge, always visible (reserves space), 40 px | right edge, autohide, 36 px |
 | Top bar | menu and wordmark, clock, status | menu, workspaces, focused app | symbol-only menu, workspaces, focused app |
 | Workspaces | dynamic, through the overview | dynamic | 4 fixed, Super+1…4 / Super+Shift+1…4, on all monitors |
 | Title bars | close only | minimize, maximize, close | minimize, maximize, close |
@@ -44,8 +44,11 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | Schema | Key | Pure value |
 | --- | --- | --- |
 | `org.gnome.desktop.interface` | `icon-theme` | `JERONIX` |
+| `org.gnome.desktop.interface` | `gtk-theme` | `Yaru-sage-dark` |
+| `org.gnome.desktop.interface` | `font-name` | `Noto Sans 11` |
+| `org.gnome.desktop.interface` | `document-font-name` | `Noto Sans 11` |
 | `org.gnome.desktop.interface` | `color-scheme` | `prefer-dark` |
-| `org.gnome.desktop.interface` | `accent-color` | `orange` (GNOME's closest accent to copper, for third-party apps) |
+| `org.gnome.desktop.interface` | `accent-color` | `slate` (Ubuntu shows it as Yaru sage) |
 | `org.gnome.desktop.interface` | `enable-hot-corners` | `true` |
 | `org.gnome.desktop.interface` | `clock-show-weekday` | `true` |
 | `org.gnome.desktop.wm.preferences` | `button-layout` | `appmenu:close` |
@@ -63,8 +66,8 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | `org.gnome.shell.extensions.jeronix-panel` | `show-window-context` | `false` |
 | `org.gnome.shell.extensions.jeronix-panel` | `hide-activities` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `position` | `bottom` |
-| `org.gnome.shell.extensions.jeronix-dock` | `behavior` | `intellihide` |
-| `org.gnome.shell.extensions.jeronix-dock` | `icon-size` | `44` |
+| `org.gnome.shell.extensions.jeronix-dock` | `behavior` | `always` |
+| `org.gnome.shell.extensions.jeronix-dock` | `icon-size` | `32` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-running` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-previews` | `true` |
 

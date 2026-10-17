@@ -120,7 +120,8 @@ class LayoutStructureTests(unittest.TestCase):
         positions = {name: dock(l, "position") for name, l in self.layouts.items()}
         behaviors = {name: dock(l, "behavior") for name, l in self.layouts.items()}
         self.assertEqual(len(set(positions.values())), 3, positions)
-        self.assertEqual(len(set(behaviors.values())), 3, behaviors)
+        self.assertEqual(behaviors["studio"], "autohide", behaviors)
+        self.assertEqual(behaviors["pure"], "always", "Windows 11-style taskbar stays visible")
         keys = {name: {(s["schema"], s["key"]) for s in l["settings"]} for name, l in self.layouts.items()}
         self.assertIn(("org.gnome.desktop.wm.preferences", "num-workspaces"), keys["studio"])
         self.assertNotIn(("org.gnome.desktop.wm.preferences", "num-workspaces"), keys["pure"])

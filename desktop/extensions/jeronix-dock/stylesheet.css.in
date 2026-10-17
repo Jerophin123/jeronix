@@ -4,13 +4,21 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/* Windows 11 proportions: a compact bar with modest corners, a Mica-like
+ * translucent surface with a light top edge, and square-rounded tiles. */
 .jeronix-dock {
   background-color: @dock-surface@;
   border: @border-width@ solid @border@;
-  border-radius: @radius-large@;
-  padding: @space-xs@;
+  border-top-color: @dock-highlight@;
+  border-radius: @radius-medium@;
+  padding: @space-xxs@ @space-xs@;
   spacing: @space-xxs@;
   box-shadow: @shadow-overlay@;
+}
+
+.jeronix-dock-left,
+.jeronix-dock-right {
+  padding: @space-xs@ @space-xxs@;
 }
 
 .jeronix-dock-items {
@@ -20,9 +28,39 @@
 .jeronix-dock .jeronix-dock-item,
 .jeronix-dock .jeronix-dock-item.overview-tile {
   padding: 8px;
-  border-radius: @radius-medium@;
+  border-radius: @radius-small@;
   background-color: transparent;
   transition-duration: @duration-fast@;
+}
+
+/* Windows 11 search box. */
+.jeronix-dock .jeronix-dock-search-wide,
+.jeronix-dock .jeronix-dock-search-wide:hover {
+  padding: 6px;
+  background-color: transparent;
+}
+
+.jeronix-dock-search-wide .jeronix-dock-search-box {
+  background-color: @surface-overlay@;
+  border: @border-width@ solid @border@;
+  border-radius: @radius-pill@;
+  padding: 0 @space-sm@;
+  spacing: @space-xs@;
+  min-height: 30px;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-dock-search-wide:hover .jeronix-dock-search-box {
+  background-color: @control-hover@;
+}
+
+.jeronix-dock-search-wide:focus .jeronix-dock-search-box {
+  border-color: @focus-ring@;
+}
+
+.jeronix-dock-search-text {
+  color: @text-muted@;
+  font-size: @font-caption@;
 }
 
 .jeronix-dock .jeronix-dock-item .overview-icon {

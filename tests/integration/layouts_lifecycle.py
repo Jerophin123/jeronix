@@ -76,7 +76,7 @@ def run(s):
         s.screenshot("10-ubuntu-before")
 
     expectations = [
-        ("pure", "bottom", "intellihide", None),
+        ("pure", "bottom", "always", None),
         ("studio", "right", "autohide", 4),
         ("classic", "left", "always", None),
     ]

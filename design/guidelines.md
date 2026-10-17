@@ -45,7 +45,7 @@ orange.
 
 ## Typography
 
-Ubuntu Sans for UI text and Ubuntu Sans Mono for code. Both ship with
+Noto Sans for UI text and Ubuntu Sans Mono for code. Both ship with
 Ubuntu 26.04, so no fonts are bundled. Sizes are multiples of
 `base-size-pt` taken from `typography.scale`. The shell theme writes them
 as `em`, so the user's font and text-scaling settings apply to all of them.

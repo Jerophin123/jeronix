@@ -74,9 +74,9 @@ def run(s):
     fx, fy, fw, fh = dock["itemRects"][1]
     s.pointer(fx + fw / 2 - 3, fy + fh / 2)
     s.pointer(fx + fw / 2, fy + fh / 2)
-    mag = s.wait_for("magnification", lambda: (d := s.debug(DOCK))["magnification"][FAVORITES[1]] > 1.3 and d)
+    mag = s.wait_for("magnification", lambda: (d := s.debug(DOCK))["magnification"][FAVORITES[1]] > 1.15 and d)
     s.check("the hovered icon is magnified and its neighbors grow less",
-            1.1 < mag["magnification"][FAVORITES[0]] < 1.2 and 1.1 < mag["magnification"][FAVORITES[2]] < 1.2)
+            1.03 < mag["magnification"][FAVORITES[0]] < 1.12 and 1.03 < mag["magnification"][FAVORITES[2]] < 1.12)
     label = s.wait_for("hover label", lambda: s.debug(DOCK)["label"])
     s.check(f"a label with the app name appears above the icon ({label!r})", label == "Text Editor")
     s.screenshot("01b-magnify")
