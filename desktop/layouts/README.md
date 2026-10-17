@@ -30,9 +30,10 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 
 | | Pure | Classic | Studio |
 | --- | --- | --- | --- |
-| Dock | Windows 11-style floating taskbar, bottom, always visible, 32 px | left edge, always visible (reserves space), 40 px | right edge, autohide, 36 px |
-| Top bar | menu and wordmark, clock, status | menu, workspaces, focused app | symbol-only menu, workspaces, focused app |
-| Workspaces | dynamic, through the overview | dynamic | 4 fixed, Super+1…4 / Super+Shift+1…4, on all monitors |
+| Bar | Windows 11 taskbar: full width, Start, Search, Task View and apps **centered**, always visible | Same taskbar with Start and apps **left-aligned** | Floating dock on the right edge, autohide |
+| Tray | Quick Settings, notifications and clock in the taskbar | Same | In GNOME's top bar |
+| Top bar | hidden (one bar) | hidden (one bar) | menu symbol, numbered workspaces, focused app |
+| Workspaces | dynamic, via Task View or Super | dynamic | 4 fixed, Super+1…4 / Super+Shift+1…4, on all monitors |
 | Title bars | close only | minimize, maximize, close | minimize, maximize, close |
 | Hot corner | on | off | off |
 | Alt+Tab | all workspaces | all workspaces | current workspace only |
@@ -44,7 +45,8 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | Schema | Key | Pure value |
 | --- | --- | --- |
 | `org.gnome.desktop.interface` | `icon-theme` | `JERONIX` |
-| `org.gnome.desktop.interface` | `gtk-theme` | `Yaru-sage-dark` |
+| `org.gnome.desktop.sound` | `theme-name` | `freedesktop` |
+| `org.gnome.desktop.interface` | `gtk-theme` | `Adwaita-dark` |
 | `org.gnome.desktop.interface` | `font-name` | `Noto Sans 11` |
 | `org.gnome.desktop.interface` | `document-font-name` | `Noto Sans 11` |
 | `org.gnome.desktop.interface` | `color-scheme` | `prefer-dark` |
@@ -70,6 +72,11 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | `org.gnome.shell.extensions.jeronix-dock` | `icon-size` | `32` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-running` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-previews` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `style` | `taskbar` |
+| `org.gnome.shell.extensions.jeronix-dock` | `alignment` | `center` |
+| `org.gnome.shell.extensions.jeronix-dock` | `system-tray` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `hide-top-bar` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-task-view-button` | `true` |
 
 Classic and Studio list their settings, each with a reason, in
 [classic.json](classic.json) and [studio.json](studio.json).

@@ -5,7 +5,7 @@ mode, JERONIX shell enabled).
 
 The apps are staged exactly as the installer does (packaging/jeronix_apps.py)
 into the sandbox's data directory. Each one must open its window, show the
-right name in the top bar and keep running; Super+J must open the launcher
+right name in the top bar and keep running; Super+Shift+J must open the launcher
 through the panel's keybinding. Screenshots go to $JERONIX_SHOTS if set.
 
 Usage: python3 tests/integration/apps_lifecycle.py [--keep-logs]
@@ -60,10 +60,11 @@ def run(s):
         proc.wait(10)
         s.wait_for(f"{title} closed", lambda: not window_open(s, title))
 
-    # The panel's Super+J keybinding launches the launcher via its desktop entry.
-    s.keys("Super+j")
-    s.wait_for("launcher from Super+J", lambda: window_open(s, "JERONIX Launcher"), timeout=30)
-    s.check("Super+J opens the JERONIX Launcher", True)
+    # The panel's Super+Shift+J keybinding launches the launcher via its desktop entry
+    # (Super+J opens the Start menu, tested in desktop_lifecycle.py).
+    s.keys("Super+Shift+j")
+    s.wait_for("launcher from Super+Shift+J", lambda: window_open(s, "JERONIX Launcher"), timeout=30)
+    s.check("Super+Shift+J opens the JERONIX Launcher", True)
 
     errors = [line for line in (s.tmp / "client.log").read_text(errors="replace").splitlines()
               if "Traceback" in line or ("Error" in line and "Gdk-Message" not in line)]

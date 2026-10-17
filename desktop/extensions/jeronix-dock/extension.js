@@ -6,6 +6,10 @@
 // and reversibly (see scripts/jeronix_layout.py).
 
 import GLib from 'gi://GLib';
+import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
+
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -20,6 +24,9 @@ export default class JeronixDockExtension extends Extension {
         // burst, instead of once per key.
         this._settings.connectObject('changed', () => this._queueRebuild(), this);
         this._dock = new Dock(this._settings, this.path);
+        Main.wm.addKeybinding('start-menu-shortcut', this._settings, Meta.KeyBindingFlags.NONE,
+            Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+            () => this._dock?.toggleStartMenu());
     }
 
     _queueRebuild() {
@@ -38,6 +45,7 @@ export default class JeronixDockExtension extends Extension {
             GLib.source_remove(this._rebuildId);
             this._rebuildId = 0;
         }
+        Main.wm.removeKeybinding('start-menu-shortcut');
         this._settings.disconnectObject(this);
         this._dock?.destroy();
         this._dock = null;

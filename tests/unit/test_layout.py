@@ -119,7 +119,11 @@ class LayoutStructureTests(unittest.TestCase):
                         if s["schema"].endswith("jeronix-dock") and s["key"] == key)
         positions = {name: dock(l, "position") for name, l in self.layouts.items()}
         behaviors = {name: dock(l, "behavior") for name, l in self.layouts.items()}
-        self.assertEqual(len(set(positions.values())), 3, positions)
+        styles = {name: dock(l, "style") for name, l in self.layouts.items()}
+        alignments = {name: dock(l, "alignment") for name, l in self.layouts.items() if name != "studio"}
+        self.assertEqual(positions, {"pure": "bottom", "classic": "bottom", "studio": "right"})
+        self.assertEqual(styles, {"pure": "taskbar", "classic": "taskbar", "studio": "floating"})
+        self.assertEqual(alignments, {"pure": "center", "classic": "start"})
         self.assertEqual(behaviors["studio"], "autohide", behaviors)
         self.assertEqual(behaviors["pure"], "always", "Windows 11-style taskbar stays visible")
         keys = {name: {(s["schema"], s["key"]) for s in l["settings"]} for name, l in self.layouts.items()}

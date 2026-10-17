@@ -222,6 +222,11 @@ class Probe {
             }),
             workspaces: global.workspace_manager.n_workspaces,
             activitiesVisible: Main.panel.statusArea.activities?.container.visible ?? null,
+            panelVisible: Main.panel.visible,
+            quickSettingsParent: Main.panel.statusArea.quickSettings?.container.get_parent()?.name ||
+                Main.panel.statusArea.quickSettings?.container.get_parent()?.style_class || null,
+            dateMenuParent: Main.panel.statusArea.dateMenu?.container.get_parent()?.name ||
+                Main.panel.statusArea.dateMenu?.container.get_parent()?.style_class || null,
         });
     }
 }

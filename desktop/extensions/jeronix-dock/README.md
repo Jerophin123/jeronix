@@ -9,7 +9,24 @@ exactly as in the rest of the shell.
 
 ## Features
 
-A Windows 11 and macOS hybrid:
+A Windows 11 and macOS hybrid. By default it is a **full-width Windows 11
+taskbar** (`style=taskbar`):
+
+- **One bar.** GNOME's Quick Settings (network, sound, power, Stay Awake...)
+  and the clock with the notification center and calendar are moved from
+  the top bar into the taskbar's tray, and open upward. They are GNOME's own
+  components, so every control works as before. GNOME's top bar is hidden
+  (`hide-top-bar`) and comes back as soon as the extension is disabled or
+  the screen locks.
+- **Start menu** (Start button or Super+J): a shell popup, not a window.
+  Search on top (type, then Enter), pinned apps (the dock favorites), All
+  apps, and the user's name with JERONIX Settings, Lock, Log Out and Power
+  Off at the bottom.
+- **Task View** opens GNOME's overview (windows and workspaces), as does
+  the Super key. GNOME doesn't let extensions take over the Super key.
+- Apps are **centered** or **left-aligned** (`alignment`).
+
+The rest of the bar:
 
 - **Start and Search first** (Windows 11). The JERONIX mark opens the
   JERONIX Launcher (or GNOME's app grid if the launcher isn't installed).
@@ -51,7 +68,13 @@ A Windows 11 and macOS hybrid:
 | `behavior` | `intellihide` | `always`, `intellihide`, `autohide` |
 | `icon-size` | `44` | 24–72 (preferred; shrinks to fit) |
 | `show-running` | `true` | Show running non-favorite apps |
-| `show-start-button` | `true` | JERONIX Start button (opens the launcher) |
+| `style` | `taskbar` | `taskbar` (full width, bottom only), `floating` |
+| `alignment` | `center` | `center`, `start` |
+| `system-tray` | `true` | Quick Settings and clock in the bar (bottom only) |
+| `hide-top-bar` | `true` | Hide GNOME's top bar while the bar carries the tray |
+| `show-task-view-button` | `true` | Task View button |
+| `start-menu-shortcut` | `['<Super>j']` | Opens the Start menu |
+| `show-start-button` | `true` | JERONIX Start button (opens the Start menu) |
 | `show-search-button` | `true` | Search button (GNOME search) |
 | `magnify` | `true` | Magnify icons under the pointer |
 | `show-apps-button` | `false` | Applications button at the end |

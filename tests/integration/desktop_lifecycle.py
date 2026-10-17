@@ -67,8 +67,36 @@ def run(s):
 
     # Hover the running app's icon: previews open after a short delay.
     s.check("no scrollbar when every app fits", dock["overflow"] is False)
-    s.check("Windows 11-style Start and Search buttons lead the bar",
-            dock["startButton"] and dock["searchButton"])
+    s.check("Windows 11-style Start, Search and Task View buttons lead the bar",
+            dock["startButton"] and dock["searchButton"] and dock["taskViewButton"])
+    gx, gy, gw, gh = dock["groupRect"]
+    tx, ty, tw, th = dock["trayRect"]
+    s.check(f"apps are centered on the taskbar (group {dock['groupRect']})", abs((gx + gw / 2) - (mx + mw / 2)) <= 2)
+    s.check(f"the tray sits at the right end without overlapping the apps (tray {dock['trayRect']})",
+            mx + mw - 24 <= tx + tw <= mx + mw and tx > gx + gw)
+    s.check("the default is a full-width Windows 11 taskbar", dock["style"] == "taskbar" and x == mx and w == mw)
+    state = s.state()
+    s.check(f"Quick Settings and the clock/notification center are in the taskbar tray ({dock['tray']})",
+            dock["tray"] == ["quickSettings", "dateMenu"]
+            and state["quickSettingsParent"] == "jeronix-tray" and state["dateMenuParent"] == "jeronix-tray")
+    s.check("GNOME's top bar is hidden while the taskbar carries the tray",
+            dock["topBarHidden"] and state["panelVisible"] is False)
+
+    # Start menu: a shell popup with pinned apps; typing searches.
+    s.keys("Super+j")
+    start = s.wait_for("Start menu", lambda: (d := s.debug(DOCK))["startMenuOpen"] and d)
+    s.check("Super+J opens the Start menu showing the pinned apps",
+            start["startMenuTitle"] == "Pinned" and start["startMenuApps"][:3] == FAVORITES)
+    s.screenshot("01a-start-menu")
+    for key in "text":
+        s.keys(key)
+    start = s.wait_for("search results", lambda: (d := s.debug(DOCK))["startMenuQuery"] == "text"
+                       and d["startMenuTitle"] == "Best matches" and d)
+    s.check(f"typing searches apps ({start['startMenuApps'][:2]})",
+            start["startMenuApps"] and start["startMenuApps"][0] == "org.gnome.TextEditor.desktop")
+    s.keys("Escape")
+    s.wait_for("Start menu closed", lambda: not s.debug(DOCK)["startMenuOpen"])
+    s.check("Escape closes the Start menu", True)
 
     # macOS-style magnification and label on a favorite that is not running.
     fx, fy, fw, fh = dock["itemRects"][1]
@@ -152,6 +180,10 @@ def run(s):
     # -- teardown -----------------------------------------------------------------
     s.disable(DOCK)
     s.check("disabling the dock removes it", s.debug(DOCK) is None)
+    state = s.state()
+    s.check("disabling the dock puts Quick Settings and the clock back in GNOME's top bar",
+            state["panelVisible"] is True and state["quickSettingsParent"] == "panelRight"
+            and state["dateMenuParent"] == "panelCenter")
     s.disable(PANEL)
     s.check("disabling the panel restores the Activities button",
             s.debug(PANEL) is None and s.state()["activitiesVisible"] is True)

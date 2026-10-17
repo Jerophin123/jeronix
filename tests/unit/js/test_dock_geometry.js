@@ -61,6 +61,20 @@ test('hidden offsets move the dock fully off screen', () => {
     assertEq(l.hiddenOffset(l.place(76, 300)).x, -(76 + MARGIN), 'left');
 });
 
+test('the full-width taskbar spans the bottom edge of its monitor', () => {
+    const g = new Geometry('bottom', second, 0);
+    assertEq(g.placeTaskbar(48), {x: 1600, y: 1080 - 48, width: 1920, height: 48}, 'rect');
+    assertEq(g.hiddenOffset(g.placeTaskbar(48)), {x: 0, y: 48}, 'hides downward');
+    assertEq(g.taskbarAvailable(300) < 1920 - 600, true, 'tray width kept free on both sides');
+    let threw = false;
+    try {
+        new Geometry('left', monitor, 32).placeTaskbar(48);
+    } catch {
+        threw = true;
+    }
+    assertEq(threw, true, 'only at the bottom');
+});
+
 test('unknown positions are rejected', () => {
     let threw = false;
     try {

@@ -124,6 +124,16 @@ class SettingsWindow(Adw.ApplicationWindow):
         group.add(extension_switch("JERONIX dock", "Floating dock with favorites, running apps and previews", DOCK))
         settings = shell.extension_settings(DOCK, "org.gnome.shell.extensions.jeronix-dock")
         if settings:
+            group.add(combo_row("Style", settings, "style",
+                                [("taskbar", "Taskbar (full width)"), ("floating", "Floating dock")]))
+            group.add(combo_row("Alignment", settings, "alignment",
+                                [("center", "Centered"), ("start", "Left")]))
+            for key, title in (("system-tray", "Quick Settings and clock in the bar"),
+                               ("hide-top-bar", "Hide the top bar while the bar has the tray"),
+                               ("show-task-view-button", "Task View button")):
+                row = Adw.SwitchRow(title=title)
+                settings.bind(key, row, "active", Gio.SettingsBindFlags.DEFAULT)
+                group.add(row)
             group.add(combo_row("Position", settings, "position", POSITIONS))
             group.add(combo_row("Visibility", settings, "behavior", BEHAVIORS))
             size = Adw.SpinRow.new_with_range(24, 72, 4)

@@ -78,7 +78,7 @@ def run(s):
     expectations = [
         ("pure", "bottom", "always", None),
         ("studio", "right", "autohide", 4),
-        ("classic", "left", "always", None),
+        ("classic", "bottom", "always", None),
     ]
     for name, position, behavior, workspaces in expectations:
         out = layout(s, "apply", LAYOUTS / f"{name}.json")

@@ -66,6 +66,24 @@ export class Geometry {
         throw new Error('unreachable');
     }
 
+    /**
+     * Full-width Windows 11-style taskbar along the bottom edge (no margin;
+     * the bar itself is the edge).
+     */
+    placeTaskbar(height) {
+        if (this.position !== 'bottom')
+            throw new Error('the full-width taskbar only sits at the bottom');
+        const m = this.monitor;
+        return {x: m.x, y: m.y + m.height - height, width: m.width, height};
+    }
+
+    /** Length left for app icons in a taskbar whose tray is trayWidth wide.
+     *  The app group is centered, so the tray's width is kept free on both
+     *  sides. */
+    taskbarAvailable(trayWidth) {
+        return this.monitor.width - 2 * trayWidth - 2 * MARGIN - DOCK_CHROME;
+    }
+
     /** The thin strip at the screen edge that reveals a hidden dock. */
     edgeStrip(rect) {
         const m = this.monitor;

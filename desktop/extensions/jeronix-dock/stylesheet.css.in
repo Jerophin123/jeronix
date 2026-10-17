@@ -181,3 +181,194 @@
   max-width: 220px;
   padding-top: @space-xxs@;
 }
+
+/* ---- Full-width Windows 11 taskbar ---------------------------------------
+ * The bar carries the Mica surface; the app group inside it is transparent.
+ */
+.jeronix-taskbar {
+  background-color: @dock-surface@;
+  border-top: @border-width@ solid @dock-highlight@;
+  padding: @space-xxs@ @space-xs@;
+}
+
+.jeronix-dock.jeronix-taskbar-group {
+  background-color: transparent;
+  border-width: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* ---- System tray: GNOME's Quick Settings and clock, moved from the top bar */
+.jeronix-tray {
+  spacing: @space-xxs@;
+  padding: 0 @space-xxs@;
+}
+
+.jeronix-tray .panel-button.jeronix-tray-button {
+  color: @text@;
+  border-radius: @radius-small@;
+  padding: @space-xs@ @space-sm@;
+  background-color: transparent;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-tray .panel-button.jeronix-tray-button:hover,
+.jeronix-tray .panel-button.jeronix-tray-button:focus {
+  background-color: @hover@;
+}
+
+.jeronix-tray .panel-button.jeronix-tray-button:active,
+.jeronix-tray .panel-button.jeronix-tray-button:checked {
+  background-color: @pressed@;
+}
+
+.jeronix-tray .panel-button.jeronix-tray-button:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-tray .jeronix-tray-button .system-status-icon {
+  icon-size: 16px;
+  padding: 0 2px;
+  color: @text@;
+}
+
+.jeronix-tray .jeronix-tray-button .clock {
+  color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-medium@;
+}
+
+/* ---- Start menu ------------------------------------------------------------ */
+.jeronix-start-menu .popup-menu-content {
+  padding: 0;
+  border-radius: @radius-large@;
+}
+
+.jeronix-start {
+  width: 600px;
+  height: 540px;
+  spacing: @space-sm@;
+  padding: @space-lg@ @space-lg@ 0 @space-lg@;
+}
+
+.jeronix-start-search {
+  background-color: @surface-overlay@;
+  color: @text@;
+  border: @border-width@ solid @border@;
+  border-radius: @radius-pill@;
+  padding: @space-xs@ @space-md@;
+  caret-color: @accent@;
+  selection-background-color: @selection@;
+}
+
+.jeronix-start-search:focus {
+  border-color: @focus-ring@;
+}
+
+.jeronix-start-search StLabel.hint-text {
+  color: @text-muted@;
+}
+
+.jeronix-start-search-icon {
+  icon-size: 16px;
+  color: @text-muted@;
+  padding-right: @space-xs@;
+}
+
+.jeronix-start-header {
+  padding: @space-xs@ @space-xxs@ 0 @space-xxs@;
+}
+
+.jeronix-start-title {
+  color: @text@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-start-toggle {
+  color: @text@;
+  background-color: @surface-overlay@;
+  border-radius: @radius-small@;
+  padding: @space-xxs@ @space-sm@;
+  font-size: @font-caption@;
+}
+
+.jeronix-start-toggle:hover {
+  background-color: @control-hover@;
+}
+
+.jeronix-start-toggle:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-start-grid {
+  spacing-rows: @space-xs@;
+  spacing-columns: @space-xs@;
+}
+
+.jeronix-start-tile {
+  border-radius: @radius-small@;
+  padding: @space-xs@ @space-xxs@;
+  min-width: 84px;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-start-tile:hover {
+  background-color: @hover@;
+}
+
+.jeronix-start-tile:focus {
+  background-color: @hover@;
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-start-tile-box {
+  spacing: @space-xs@;
+}
+
+.jeronix-start-tile-label {
+  color: @text@;
+  font-size: @font-caption@;
+  max-width: 84px;
+}
+
+.jeronix-start-empty {
+  color: @text-muted@;
+  padding: @space-xl@;
+}
+
+.jeronix-start-footer {
+  background-color: @surface-overlay@;
+  border-top: @border-width@ solid @border@;
+  margin: 0 -@space-lg@;
+  padding: @space-sm@ @space-lg@;
+  spacing: @space-xxs@;
+  border-radius: 0 0 @radius-large@ @radius-large@;
+}
+
+.jeronix-start-user {
+  spacing: @space-sm@;
+  color: @text@;
+}
+
+.jeronix-start-avatar {
+  icon-size: 24px;
+  color: @accent@;
+}
+
+.jeronix-start-action {
+  border-radius: @radius-small@;
+  padding: @space-xs@;
+  color: @text@;
+}
+
+.jeronix-start-action:hover {
+  background-color: @hover@;
+}
+
+.jeronix-start-action:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-start-action StIcon {
+  icon-size: 16px;
+}

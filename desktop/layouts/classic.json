@@ -2,15 +2,19 @@
   "schema": 2,
   "id": "classic",
   "name": "Classic",
-  "version": "0.1.0",
-  "summary": "Familiar and always visible: a docked app bar on the left, full title bars and your desktop icons.",
-  "description": "A familiar desktop: a dock that is always visible along the left edge and reserves its space, a top bar showing workspaces and the focused application, minimize and maximize buttons on every window, and desktop icons kept. No hot corner, so nothing happens by surprise.",
-  "gnome_shell": ["50"],
+  "version": "0.2.0",
+  "summary": "Familiar and always there: a left-aligned taskbar with Start, apps, tray and clock, full title bars and your desktop icons.",
+  "description": "A familiar desktop: a full-width taskbar along the bottom with Start, search and apps on the left and Quick Settings, notifications and the clock on the right; minimize and maximize buttons on every window; desktop icons kept. No hot corner, so nothing happens by surprise.",
+  "gnome_shell": [
+    "50"
+  ],
   "settings": [
     {"schema": "org.gnome.desktop.interface", "key": "icon-theme", "value": "JERONIX",
      "reason": "Original JERONIX icons; anything JERONIX does not draw falls back to Yaru and Adwaita."},
-    {"schema": "org.gnome.desktop.interface", "key": "gtk-theme", "value": "Yaru-sage-dark",
-     "reason": "Older (GTK 3) applications use the sage variant instead of Ubuntu orange."},
+    {"schema": "org.gnome.desktop.sound", "key": "theme-name", "value": "freedesktop",
+     "reason": "Neutral system sounds instead of Ubuntu's Yaru sound theme."},
+    {"schema": "org.gnome.desktop.interface", "key": "gtk-theme", "value": "Adwaita-dark",
+     "reason": "Older (GTK 3) applications use GNOME's neutral dark theme instead of Ubuntu's Yaru."},
     {"schema": "org.gnome.desktop.interface", "key": "font-name", "value": "Noto Sans 11",
      "reason": "A neutral interface typeface instead of Ubuntu's own."},
     {"schema": "org.gnome.desktop.interface", "key": "document-font-name", "value": "Noto Sans 11",
@@ -47,21 +51,37 @@
      "reason": "The focused application and its windows menu are always visible."},
     {"schema": "org.gnome.shell.extensions.jeronix-panel", "key": "hide-activities", "value": true,
      "reason": "The JERONIX menu replaces Activities."},
-    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "position", "value": "left",
-     "reason": "A vertical app bar on the left."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "position", "value": "bottom",
+     "reason": "A taskbar along the bottom edge, like most desktops."},
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "behavior", "value": "always",
      "reason": "Always visible; windows maximize next to it, never under it."},
-    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "icon-size", "value": 40,
-     "reason": "Compact icons for a persistent bar."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "icon-size", "value": 32,
+     "reason": "Compact taskbar icons."},
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-running", "value": true,
      "reason": "Running applications appear after favorites."},
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-previews", "value": true,
-     "reason": "Window previews on hover."}
+     "reason": "Window previews on hover."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "style", "value": "taskbar",
+     "reason": "A full-width taskbar."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "alignment", "value": "start",
+     "reason": "Start and apps aligned left, like a classic taskbar."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "system-tray", "value": true,
+     "reason": "Quick Settings and the clock with notifications live in the taskbar tray."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "hide-top-bar", "value": true,
+     "reason": "One bar: GNOME's top bar is hidden while the taskbar carries the tray."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-task-view-button", "value": true,
+     "reason": "Task View opens the windows and workspaces overview."}
   ],
   "extensions": {
-    "enable": ["jeronix-shell-theme@jeronix", "jeronix-panel@jeronix", "jeronix-dock@jeronix",
-               "jeronix-quick-settings@jeronix"],
-    "disable": ["ubuntu-dock@ubuntu.com"]
+    "enable": [
+      "jeronix-shell-theme@jeronix",
+      "jeronix-panel@jeronix",
+      "jeronix-dock@jeronix",
+      "jeronix-quick-settings@jeronix"
+    ],
+    "disable": [
+      "ubuntu-dock@ubuntu.com"
+    ]
   },
   "limitations": [
     "Desktop icons (ding) are left as they are.",

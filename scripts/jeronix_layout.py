@@ -51,6 +51,7 @@ ALLOWED = {
         "clock-show-seconds", "clock-format", "show-battery-percentage", "enable-animations", "icon-theme",
         "gtk-theme", "font-name", "document-font-name",
     },
+    "org.gnome.desktop.sound": {"theme-name"},
     "org.gnome.desktop.wm.preferences": {"button-layout", "focus-mode", "action-double-click-titlebar",
                                          "num-workspaces"},
     "org.gnome.desktop.wm.keybindings": WORKSPACE_KEYS,
@@ -69,7 +70,8 @@ ALLOWED = {
     "org.gnome.shell.extensions.ding": {"show-home", "show-trash", "show-volumes"},
     "org.gnome.shell.extensions.jeronix-dock": {
         "position", "behavior", "icon-size", "show-running", "show-apps-button", "show-previews",
-        "show-start-button", "show-search-button", "magnify",
+        "show-start-button", "show-search-button", "magnify", "style", "alignment", "system-tray",
+        "hide-top-bar", "show-task-view-button",
     },
     "org.gnome.shell.extensions.jeronix-panel": {
         "show-menu-label", "show-workspaces", "show-window-context", "hide-activities",

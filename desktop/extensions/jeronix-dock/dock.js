@@ -21,6 +21,8 @@ import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js'
 
 import {WindowPreviews} from './previews.js';
 import {Geometry, ITEM_PADDING, fitIconSize, dropIndex} from './geometry.js';
+import {StartMenu} from './start-menu.js';
+import {Tray, TopBar} from './tray.js';
 
 const SHOW_TIME = 200;
 const HIDE_DELAY = 500;
@@ -39,6 +41,12 @@ const BOUNCE_TIME = 170;
 const LABEL_DELAY = 250;
 // Where icons grow from: the screen edge the dock sits on.
 const PIVOTS = {bottom: [0.5, 1], left: [0, 0.5], right: [1, 0.5]};
+
+function rectOf(actor) {
+    const [x, y] = actor.get_transformed_position();
+    const [w, h] = actor.get_transformed_size();
+    return [x, y, w, h].map(Math.round);
+}
 
 function animationsEnabled() {
     return St.Settings.get().enable_animations;
@@ -127,6 +135,10 @@ class Dock extends St.Widget {
         this._previewTimeout = 0;
         this._syncTimeout = 0;
 
+        // Full-width Windows 11 taskbar (bottom only) or floating dock.
+        this._taskbar = settings.get_string('style') === 'taskbar' && !this._vertical;
+        this._useTray = settings.get_boolean('system-tray') && !this._vertical;
+
         this._dock = new St.BoxLayout({
             style_class: `jeronix-dock jeronix-dock-${this._position}`,
             orientation: this._vertical ? Clutter.Orientation.VERTICAL : Clutter.Orientation.HORIZONTAL,
@@ -135,17 +147,41 @@ class Dock extends St.Widget {
                 right: Clutter.ActorAlign.START}[this._position],
             y_align: this._vertical ? Clutter.ActorAlign.CENTER : Clutter.ActorAlign.START,
         });
-        this.add_child(this._dock);
+        if (this._taskbar) {
+            // The app group is centered (or left-aligned) on a full-width bar,
+            // with the system tray at the right end.
+            // Row: [lead spacer][app group][trailing area ... tray]. When
+            // centered, the lead spacer is as wide as the tray and both
+            // outer parts expand equally, so the group sits exactly in the
+            // middle while the tray stays pinned to the right end.
+            this._bar = new St.BoxLayout({
+                style_class: 'jeronix-taskbar',
+                x_expand: true,
+                y_expand: true,
+            });
+            this._centered = settings.get_string('alignment') !== 'start';
+            this._lead = new St.Widget({x_expand: this._centered});
+            this._trail = new St.BoxLayout({x_expand: true});
+            this._dock.add_style_class_name('jeronix-taskbar-group');
+            this._dock.x_expand = false;
+            this._dock.y_align = Clutter.ActorAlign.CENTER;
+            this._bar.add_child(this._lead);
+            this._bar.add_child(this._dock);
+            this._bar.add_child(this._trail);
+            this.add_child(this._bar);
+        } else {
+            this.add_child(this._dock);
+        }
 
-        // Windows 11-style Start (JERONIX Launcher) and Search (GNOME's
-        // system-wide search) at the head of the bar.
+        // Windows 11-style Start (the JERONIX Start menu), Search (GNOME's
+        // system-wide search) and Task View (GNOME's overview) at the head.
         this._startButton = new St.Button({
             style_class: 'jeronix-dock-item jeronix-dock-start',
             can_focus: true,
-            accessible_name: _('Start: JERONIX Launcher'),
+            accessible_name: _('Start'),
             child: new St.Icon({gicon: Gio.icon_new_for_string(`${extensionPath}/icons/jeronix-start.svg`)}),
         });
-        this._startButton.connect('clicked', () => this._openLauncher());
+        this._startButton.connect('clicked', () => this.toggleStartMenu());
         // Windows 11-style search box on a horizontal bar; icon only on the sides.
         const searchBox = new St.BoxLayout({style_class: 'jeronix-dock-search-box',
             y_align: Clutter.ActorAlign.CENTER});
@@ -162,12 +198,21 @@ class Dock extends St.Widget {
             child: searchBox,
         });
         this._searchButton.connect('clicked', () => Main.overview.show());
-        for (const [button, label] of [[this._startButton, _('Start')], [this._searchButton, _('Search')]]) {
+        this._taskViewButton = new St.Button({
+            style_class: 'jeronix-dock-item jeronix-dock-taskview',
+            can_focus: true,
+            accessible_name: _('Task View'),
+            child: new St.Icon({icon_name: 'view-grid-symbolic'}),
+        });
+        this._taskViewButton.connect('clicked', () => Main.overview.toggle());
+        for (const [button, label] of [[this._startButton, _('Start')], [this._searchButton, _('Search')],
+            [this._taskViewButton, _('Task View')]]) {
             button.connect('notify::hover', () => this._onButtonHover(button, label));
             this._dock.add_child(button);
         }
         this._startButton.visible = settings.get_boolean('show-start-button');
         this._searchButton.visible = settings.get_boolean('show-search-button');
+        this._taskViewButton.visible = settings.get_boolean('show-task-view-button');
 
         this._box = new St.BoxLayout({
             style_class: 'jeronix-dock-items',
@@ -202,6 +247,31 @@ class Dock extends St.Widget {
         this._appsButton.connect('clicked', () => this._openLauncher());
         this._dock.add_child(this._appsButton);
 
+        // System tray: GNOME's Quick Settings and clock/notification center.
+        if (this._useTray) {
+            this._tray = new St.BoxLayout({
+                style_class: 'jeronix-tray',
+                x_align: Clutter.ActorAlign.END,
+                y_align: Clutter.ActorAlign.CENTER,
+                // Set explicitly: otherwise Clutter derives "expand" from the
+                // panel buttons inside, and the bar stretches the tray across
+                // the app group instead of pinning it to the right end.
+                x_expand: false,
+                y_expand: false,
+            });
+            if (this._taskbar) {
+                this._trail.add_child(new St.Widget({x_expand: true}));
+                this._trail.add_child(this._tray);
+            } else {
+                this._dock.add_child(this._tray);
+            }
+            this._trayItems = new Tray(this._tray, St.Side.BOTTOM);
+            if (settings.get_boolean('hide-top-bar')) {
+                this._topBar = new TopBar();
+                this._topBar.hide();
+            }
+        }
+
         // Thin strip at the screen edge that reveals a hidden dock.
         this._edge = new St.Widget({name: 'jeronixDockEdge', reactive: true, opacity: 0});
         this._edge.connect('enter-event', () => this._reveal());
@@ -213,6 +283,15 @@ class Dock extends St.Widget {
             trackFullscreen: true,
         });
         Main.layoutManager.addChrome(this._edge, {trackFullscreen: true});
+        this._startMenu = new StartMenu(this._startButton, MENU_SIDE[this._position]);
+        this._startMenu.menu.connect('open-state-changed', (m, open) => {
+            this._menuOpen = open;
+            if (open) {
+                this._hideLabel();
+                this._previews.close();
+            }
+            this._sync();
+        });
         Main.ctrlAltTabManager.addGroup(this._dock, _('Dock'), 'user-bookmarks-symbolic', {
             focusCallback: () => {
                 this._show();
@@ -345,6 +424,13 @@ class Dock extends St.Widget {
             Main.overview.showApps();
     }
 
+    toggleStartMenu() {
+        if (Main.overview.visible)
+            Main.overview.hide();
+        this._show();
+        this._startMenu.toggle();
+    }
+
     // -- geometry ---------------------------------------------------------
 
     _relayout() {
@@ -354,14 +440,21 @@ class Dock extends St.Widget {
         const panelHeight = Main.layoutManager.panelBox.height;
         const geometry = new Geometry(this._position, monitor, panelHeight);
         const searchSlots = this._vertical ? 1 : SEARCH_SLOTS;
-        const extras = [this._startButton, this._appsButton].filter(b => b.visible).length +
+        const extras = [this._startButton, this._taskViewButton, this._appsButton].filter(b => b.visible).length +
             (this._searchButton.visible ? searchSlots : 0);
+        let available = geometry.available;
+        if (this._taskbar) {
+            const trayWidth = this._tray ? this._tray.get_preferred_width(-1)[1] : 0;
+            available = geometry.taskbarAvailable(trayWidth);
+            // Balance the tray so the centered group is truly centered.
+            this._lead.width = this._centered ? trayWidth : 0;
+        }
         const fit = fitIconSize({
             items: this._box.get_n_children(),
             extras,
             preferred: this._settings.get_int('icon-size'),
             minimum: MIN_ICON_SIZE,
-            available: geometry.available,
+            available,
         });
         this._iconSize = fit.iconSize;
         for (const item of this._box.get_children())
@@ -369,8 +462,9 @@ class Dock extends St.Widget {
         const tile = this._iconSize + ITEM_PADDING;
         this._startButton.child.icon_size = Math.round(this._iconSize * 0.85);
         this._appsButton.child.icon_size = Math.round(this._iconSize * 0.6);
+        this._taskViewButton.child.icon_size = Math.round(this._iconSize * 0.6);
         this._searchIcon.icon_size = Math.round(this._iconSize * 0.55);
-        for (const button of [this._startButton, this._appsButton])
+        for (const button of [this._startButton, this._taskViewButton, this._appsButton])
             button.set_size(tile, tile);
         // The search box takes its natural width (about SEARCH_SLOTS tiles).
         this._searchButton.set_size(this._vertical ? tile : -1, tile);
@@ -461,9 +555,16 @@ class Dock extends St.Widget {
     _place() {
         if (this._destroyed || !this._geometry)
             return;
-        const [, natW] = this._dock.get_preferred_width(-1);
-        const [, natH] = this._dock.get_preferred_height(natW);
-        const rect = this._geometry.place(natW, natH);
+        let rect;
+        if (this._taskbar) {
+            // Height of the taller of app group and tray, plus the bar's padding.
+            const [, barH] = this._bar.get_preferred_height(this._geometry.monitor.width);
+            rect = this._geometry.placeTaskbar(barH);
+        } else {
+            const [, natW] = this._dock.get_preferred_width(-1);
+            const [, natH] = this._dock.get_preferred_height(natW);
+            rect = this._geometry.place(natW, natH);
+        }
         const same = this._rect && ['x', 'y', 'width', 'height'].every(k => this._rect[k] === rect[k]);
         this._rect = rect;
         if (!same) {
@@ -681,6 +782,11 @@ class Dock extends St.Widget {
 
     destroy() {
         this._destroyed = true;
+        // Give GNOME's tray components back to the top bar first: they
+        // must not be destroyed with the taskbar.
+        this._startMenu?.destroy();
+        this._trayItems?.restore();
+        this._topBar?.restore();
         if (this._placeLater)
             global.compositor.get_laters().remove(this._placeLater);
         this._placeLater = 0;
@@ -723,6 +829,17 @@ class Dock extends St.Widget {
             magnification: Object.fromEntries(this._box.get_children().map(c =>
                 [c.app.get_id(), Math.round(c.magnification * 100) / 100])),
             label: this._label.visible ? this._label.text : null,
+            style: this._taskbar ? 'taskbar' : 'floating',
+            groupRect: rectOf(this._dock),
+            trayRect: this._tray ? rectOf(this._tray) : null,
+            barRect: this._bar ? rectOf(this._bar) : null,
+            taskViewButton: this._taskViewButton.visible,
+            tray: this._trayItems?.roles ?? [],
+            topBarHidden: this._topBar?.hidden ?? false,
+            startMenuOpen: this._startMenu.isOpen,
+            startMenuTitle: this._startMenu.title,
+            startMenuQuery: this._startMenu.query,
+            startMenuApps: this._startMenu.isOpen ? this._startMenu.visibleApps().map(a => a.get_id()) : [],
             favorites: favorites.map(a => a.get_id()),
             running: running.map(a => a.get_id()),
             rect: this._rect ? [this._rect.x, this._rect.y, this._rect.width, this._rect.height] : null,

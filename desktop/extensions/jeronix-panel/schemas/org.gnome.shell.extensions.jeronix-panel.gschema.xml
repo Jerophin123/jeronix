@@ -19,8 +19,8 @@
       <summary>Replace the Activities button with the JERONIX menu</summary>
     </key>
     <key name="launcher-shortcut" type="as">
-      <default><![CDATA[['<Super>j']]]></default>
-      <summary>Keyboard shortcut that opens the JERONIX Launcher</summary>
+      <default><![CDATA[['<Super><Shift>j']]]></default>
+      <summary>Keyboard shortcut that opens the JERONIX Launcher window (Super+J opens the Start menu)</summary>
     </key>
   </schema>
 </schemalist>
