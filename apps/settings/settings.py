@@ -131,9 +131,12 @@ class SettingsWindow(Adw.ApplicationWindow):
             size.set_subtitle("Icons shrink automatically when many apps are open")
             settings.bind("icon-size", size, "value", Gio.SettingsBindFlags.DEFAULT)
             group.add(size)
-            for key, title in (("show-running", "Show running applications"),
+            for key, title in (("show-start-button", "Start button (opens the JERONIX Launcher)"),
+                               ("show-search-button", "Search button (apps, files and settings)"),
+                               ("magnify", "Magnify icons under the pointer"),
+                               ("show-running", "Show running applications"),
                                ("show-previews", "Window previews on hover"),
-                               ("show-apps-button", "Applications button")):
+                               ("show-apps-button", "Applications button at the end")):
                 row = Adw.SwitchRow(title=title)
                 settings.bind(key, row, "active", Gio.SettingsBindFlags.DEFAULT)
                 group.add(row)

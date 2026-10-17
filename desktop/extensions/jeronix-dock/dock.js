@@ -6,6 +6,7 @@
 // the shell.
 
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
@@ -29,12 +30,63 @@ const LAUNCHER_ID = 'io.jeronix.Launcher.desktop';
 
 const MENU_SIDE = {bottom: St.Side.BOTTOM, left: St.Side.LEFT, right: St.Side.RIGHT};
 
+const MAGNIFY = [1.35, 1.15]; // hovered icon, direct neighbors
+const BOUNCE_HEIGHT = 14;
+const BOUNCE_TIME = 170;
+const LABEL_DELAY = 250;
+// Where icons grow from: the screen edge the dock sits on.
+const PIVOTS = {bottom: [0.5, 1], left: [0, 0.5], right: [1, 0.5]};
+
+function animationsEnabled() {
+    return St.Settings.get().enable_animations;
+}
+
 const DockItem = GObject.registerClass(
 class DockItem extends AppDisplay.AppIcon {
-    _init(app, side) {
+    _init(app, side, position) {
         super._init(app, {setSizeManually: true, showLabel: false, popupMenuSide: side});
         this.add_style_class_name('jeronix-dock-item');
         this.accessible_name = app.get_name();
+        this._position = position;
+        this.icon.set_pivot_point(...PIVOTS[position]);
+    }
+
+    // macOS-style launch bounce instead of GNOME's zoom-out; nothing with
+    // reduced motion.
+    animateLaunch() {
+        if (!animationsEnabled())
+            return;
+        const away = {bottom: ['translation_y', -1], left: ['translation_x', 1],
+            right: ['translation_x', -1]}[this._position];
+        const bounce = (n) => {
+            if (n === 0)
+                return;
+            this.icon.ease({
+                [away[0]]: away[1] * BOUNCE_HEIGHT,
+                duration: BOUNCE_TIME,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+                onComplete: () => this.icon.ease({
+                    [away[0]]: 0,
+                    duration: BOUNCE_TIME,
+                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    onComplete: () => bounce(n - 1),
+                }),
+            });
+        };
+        bounce(2);
+    }
+
+    setMagnification(scale) {
+        this.icon.ease({
+            scale_x: scale,
+            scale_y: scale,
+            duration: animationsEnabled() ? 120 : 0,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        });
+    }
+
+    get magnification() {
+        return this.icon.scale_x;
     }
 
     // The dock handles drops itself (see Dock.acceptDrop).
@@ -55,7 +107,7 @@ class DockItem extends AppDisplay.AppIcon {
 
 export const Dock = GObject.registerClass(
 class Dock extends St.Widget {
-    constructor(settings) {
+    constructor(settings, extensionPath) {
         super({
             name: 'jeronixDockContainer',
             reactive: true,
@@ -82,19 +134,49 @@ class Dock extends St.Widget {
         });
         this.add_child(this._dock);
 
+        // Windows 11-style Start (JERONIX Launcher) and Search (GNOME's
+        // system-wide search) at the head of the bar.
+        this._startButton = new St.Button({
+            style_class: 'jeronix-dock-item jeronix-dock-start',
+            can_focus: true,
+            accessible_name: _('Start: JERONIX Launcher'),
+            child: new St.Icon({gicon: Gio.icon_new_for_string(`${extensionPath}/icons/jeronix-start.svg`)}),
+        });
+        this._startButton.connect('clicked', () => this._openLauncher());
+        this._searchButton = new St.Button({
+            style_class: 'jeronix-dock-item jeronix-dock-search',
+            can_focus: true,
+            accessible_name: _('Search'),
+            child: new St.Icon({icon_name: 'system-search-symbolic'}),
+        });
+        this._searchButton.connect('clicked', () => Main.overview.show());
+        for (const [button, label] of [[this._startButton, _('Start')], [this._searchButton, _('Search')]]) {
+            button.connect('notify::hover', () => this._onButtonHover(button, label));
+            this._dock.add_child(button);
+        }
+        this._startButton.visible = settings.get_boolean('show-start-button');
+        this._searchButton.visible = settings.get_boolean('show-search-button');
+
         this._box = new St.BoxLayout({
             style_class: 'jeronix-dock-items',
             orientation: this._dock.orientation,
         });
         this._box._delegate = this;
+        // Items sit directly in the bar so magnified icons can rise above it;
+        // only when they overflow do they move into a scroll view (which clips).
         this._scroll = new St.ScrollView({
             style_class: 'jeronix-dock-scroll',
             hscrollbar_policy: this._vertical ? St.PolicyType.NEVER : St.PolicyType.AUTOMATIC,
             vscrollbar_policy: this._vertical ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER,
             overlay_scrollbars: true,
-            child: this._box,
+            visible: false,
         });
+        this._dock.add_child(this._box);
         this._dock.add_child(this._scroll);
+
+        this._label = new St.Label({style_class: 'jeronix-dock-label', visible: false});
+        Main.layoutManager.addTopChrome(this._label);
+        this._labelTimeout = 0;
 
         this._separator = new St.Widget({style_class: 'jeronix-dock-separator', y_expand: this._vertical});
         this._dock.add_child(this._separator);
@@ -122,11 +204,18 @@ class Dock extends St.Widget {
         Main.ctrlAltTabManager.addGroup(this._dock, _('Dock'), 'user-bookmarks-symbolic', {
             focusCallback: () => {
                 this._show();
-                (this._box.get_first_child() ?? this._appsButton).grab_key_focus();
+                (this._startButton.visible ? this._startButton : this._box.get_first_child() ?? this._appsButton)
+                    .grab_key_focus();
             },
         });
 
-        this.connect('notify::hover', () => this._sync());
+        this.connect('notify::hover', () => {
+            if (!this.hover) {
+                this._magnify(null);
+                this._hideLabel();
+            }
+            this._sync();
+        });
         this._dock.connect('notify::allocation', () => this._queuePlace());
         this._appSystem = Shell.AppSystem.get_default();
         this._appSystem.connectObject(
@@ -176,7 +265,7 @@ class Dock extends St.Widget {
         this._box.destroy_all_children();
         const side = MENU_SIDE[this._position];
         for (const app of [...favorites, ...running]) {
-            const item = new DockItem(app, side);
+            const item = new DockItem(app, side, this._position);
             item.connect('notify::hover', () => this._onItemHover(item));
             item.connect('menu-state-changed', (i, open) => {
                 this._menuOpen = open;
@@ -223,9 +312,10 @@ class Dock extends St.Widget {
             return;
         const panelHeight = Main.layoutManager.panelBox.height;
         const geometry = new Geometry(this._position, monitor, panelHeight);
+        const buttons = [this._startButton, this._searchButton, this._appsButton].filter(b => b.visible);
         const fit = fitIconSize({
             items: this._box.get_n_children(),
-            extras: this._appsButton.visible ? 1 : 0,
+            extras: buttons.length,
             preferred: this._settings.get_int('icon-size'),
             minimum: MIN_ICON_SIZE,
             available: geometry.available,
@@ -233,23 +323,91 @@ class Dock extends St.Widget {
         this._iconSize = fit.iconSize;
         for (const item of this._box.get_children())
             item.icon.setIconSize(this._iconSize);
-        this._appsButton.child.icon_size = Math.round(this._iconSize * 0.6);
-        this._appsButton.set_size(this._iconSize + ITEM_PADDING, this._iconSize + ITEM_PADDING);
+        for (const button of [this._startButton, this._searchButton, this._appsButton]) {
+            const glyph = button === this._startButton ? 0.9 : 0.6;
+            button.child.icon_size = Math.round(this._iconSize * glyph);
+            button.set_size(this._iconSize + ITEM_PADDING, this._iconSize + ITEM_PADDING);
+        }
 
-        // Overflow scrolls instead of shrinking icons below the minimum;
-        // otherwise no scrollbar at all.
-        const scrollPolicy = fit.overflow ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER;
-        this._scroll.set_policy(
-            this._vertical ? St.PolicyType.NEVER : scrollPolicy,
-            this._vertical ? scrollPolicy : St.PolicyType.NEVER);
-        const itemsLength = fit.itemsLength;
-        if (this._vertical)
-            this._scroll.set_size(-1, itemsLength);
-        else
-            this._scroll.set_size(itemsLength, -1);
+        // Overflow scrolls (in a clipping scroll view) instead of shrinking
+        // icons below the minimum; otherwise the items sit in the bar itself.
+        this._setOverflow(fit.overflow, fit.itemsLength);
 
         this._geometry = geometry;
         this._place();
+    }
+
+    _setOverflow(overflow, itemsLength) {
+        const inScroll = this._box.get_parent() === this._scroll;
+        if (overflow && !inScroll) {
+            this._dock.remove_child(this._box);
+            this._scroll.set_child(this._box);
+        } else if (!overflow && inScroll) {
+            this._scroll.set_child(null);
+            this._dock.insert_child_above(this._box, this._searchButton);
+        }
+        this._scroll.visible = overflow;
+        if (overflow) {
+            this._scroll.set_policy(
+                this._vertical ? St.PolicyType.NEVER : St.PolicyType.AUTOMATIC,
+                this._vertical ? St.PolicyType.AUTOMATIC : St.PolicyType.NEVER);
+            if (this._vertical)
+                this._scroll.set_size(-1, itemsLength);
+            else
+                this._scroll.set_size(itemsLength, -1);
+        }
+        this._overflow = overflow;
+    }
+
+    // -- hover: magnification and labels ------------------------------------
+
+    _magnify(hovered) {
+        const on = this._settings.get_boolean('magnify');
+        const items = this._box.get_children();
+        const at = items.indexOf(hovered);
+        items.forEach((item, i) => {
+            const distance = at < 0 || !on ? Infinity : Math.abs(i - at);
+            item.setMagnification(distance < MAGNIFY.length ? MAGNIFY[distance] : 1);
+        });
+    }
+
+    _showLabel(actor, text) {
+        this._hideLabel();
+        this._labelTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, LABEL_DELAY, () => {
+            this._labelTimeout = 0;
+            if (!actor.hover || this._previews.isOpen || this._menuOpen)
+                return GLib.SOURCE_REMOVE;
+            this._label.text = text;
+            this._label.show();
+            const [x, y] = actor.get_transformed_position();
+            const [w, h] = actor.get_transformed_size();
+            const [, lw] = this._label.get_preferred_width(-1);
+            const [, lh] = this._label.get_preferred_height(lw);
+            // Above the magnified icon at the bottom, beside it on the sides.
+            const lift = h * (MAGNIFY[0] - 1);
+            const pos = {
+                bottom: [x + w / 2 - lw / 2, y - lh - 8 - lift],
+                left: [x + w + 8 + w * (MAGNIFY[0] - 1), y + h / 2 - lh / 2],
+                right: [x - lw - 8 - w * (MAGNIFY[0] - 1), y + h / 2 - lh / 2],
+            }[this._position];
+            this._label.set_position(Math.round(pos[0]), Math.round(pos[1]));
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _hideLabel() {
+        if (this._labelTimeout) {
+            GLib.source_remove(this._labelTimeout);
+            this._labelTimeout = 0;
+        }
+        this._label.hide();
+    }
+
+    _onButtonHover(button, text) {
+        if (button.hover)
+            this._showLabel(button, text);
+        else
+            this._hideLabel();
     }
 
     // Positions the container around the dock's natural size. Measured on
@@ -420,16 +578,23 @@ class Dock extends St.Widget {
             GLib.source_remove(this._previewTimeout);
             this._previewTimeout = 0;
         }
+        const hovered = this._box.get_children().find(i => i.hover) ?? null;
+        this._magnify(hovered);
         if (!item.hover) {
+            if (!hovered)
+                this._hideLabel();
             this._previews.scheduleClose();
             return;
         }
-        if (this._menuOpen || !this._settings.get_boolean('show-previews'))
+        this._showLabel(item, item.app.get_name());
+        if (this._menuOpen || !this._settings.get_boolean('show-previews') || item.app.get_n_windows() === 0)
             return;
         this._previewTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, PREVIEW_DELAY, () => {
             this._previewTimeout = 0;
-            if (item.hover && !this._menuOpen)
+            if (item.hover && !this._menuOpen) {
+                this._hideLabel(); // the previews carry the window titles
                 this._previews.open(item);
+            }
             return GLib.SOURCE_REMOVE;
         });
     }
@@ -483,6 +648,9 @@ class Dock extends St.Widget {
         for (const actor of global.get_window_actors())
             actor.meta_window?.disconnectObject(this);
         this._previews.destroy();
+        this._hideLabel();
+        Main.layoutManager.removeChrome(this._label);
+        this._label.destroy();
         Main.layoutManager.removeChrome(this._edge);
         this._edge.destroy();
         Main.layoutManager.removeChrome(this);
@@ -503,8 +671,12 @@ class Dock extends St.Widget {
                 const [w, h] = c.get_transformed_size();
                 return [x, y, w, h].map(Math.round);
             }),
-            overflow: this._scroll.vscrollbar_policy !== St.PolicyType.NEVER ||
-                this._scroll.hscrollbar_policy !== St.PolicyType.NEVER,
+            overflow: Boolean(this._overflow),
+            startButton: this._startButton.visible,
+            searchButton: this._searchButton.visible,
+            magnification: Object.fromEntries(this._box.get_children().map(c =>
+                [c.app.get_id(), Math.round(c.magnification * 100) / 100])),
+            label: this._label.visible ? this._label.text : null,
             favorites: favorites.map(a => a.get_id()),
             running: running.map(a => a.get_id()),
             rect: this._rect ? [this._rect.x, this._rect.y, this._rect.width, this._rect.height] : null,

@@ -9,10 +9,20 @@ exactly as in the rest of the shell.
 
 ## Features
 
-- **Favorites then running apps**, separated from an Applications button
-  that opens the JERONIX Launcher (or GNOME's app grid if the launcher isn't
-  installed). The focused app is tinted sage and running apps get a copper
-  bar.
+A Windows 11 and macOS hybrid:
+
+- **Start and Search first** (Windows 11). The JERONIX mark opens the
+  JERONIX Launcher (or GNOME's app grid if the launcher isn't installed).
+  Search opens GNOME's system-wide search for apps, files and settings.
+- **Pill indicators** (Windows 11): a short neutral pill under running apps,
+  which widens into copper for the focused app.
+- **Magnification** (macOS): the hovered icon grows 35% and its neighbors
+  15%, rising out of the bar from the screen edge.
+- **Hover labels** (macOS) above icons, and a **launch bounce** for apps that
+  are starting. Both are instant or off with reduced motion.
+- **Floating, translucent, rounded** bar, centered and sized to its contents.
+- **Favorites then running apps**, with an optional Applications button at
+  the end.
 - **Window previews**: hover a running app for live thumbnails of its
   windows on the current workspace, and named entries for windows on other
   workspaces. Click one to switch to it.
@@ -41,7 +51,10 @@ exactly as in the rest of the shell.
 | `behavior` | `intellihide` | `always`, `intellihide`, `autohide` |
 | `icon-size` | `44` | 24–72 (preferred; shrinks to fit) |
 | `show-running` | `true` | Show running non-favorite apps |
-| `show-apps-button` | `true` | Show the Applications button |
+| `show-start-button` | `true` | JERONIX Start button (opens the launcher) |
+| `show-search-button` | `true` | Search button (GNOME search) |
+| `magnify` | `true` | Magnify icons under the pointer |
+| `show-apps-button` | `false` | Applications button at the end |
 | `show-previews` | `true` | Window previews on hover |
 
 ## Two docks

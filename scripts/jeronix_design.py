@@ -37,6 +37,7 @@ EXTENSIONS = ROOT / "desktop" / "extensions"
 # Design assets bundled into extensions: {extension dir: {target: design/icons file}}.
 EXTENSION_ICONS = {
     "jeronix-panel": {"icons/jeronix-symbolic.svg": "jeronix-mark-symbolic.svg"},
+    "jeronix-dock": {"icons/jeronix-start.svg": "jeronix-mark.svg"},
 }
 
 MODES = ("dark", "light")
@@ -190,7 +191,7 @@ def theme_variables(tokens, mode, platform):
     v["panel-pressed"] = rgba(p["on-panel"], i["pressed-opacity"] * 2)
     v["selection"] = rgba(p["accent"], i["selected-opacity"] * 1.5)
     v["selected-secondary"] = rgba(p["accent-secondary"], i["selected-opacity"])
-    v["dock-surface"] = rgba(p["surface-raised"], 0.94)
+    v["dock-surface"] = rgba(p["surface-raised"], 0.86)  # translucent, macOS-like
     # Light popovers need softer shadows than dark ones to look the same.
     shadow_scale = 1.0 if mode == "dark" else 0.5
     for name, spec in tokens["elevation"].items():

@@ -75,10 +75,14 @@ class DocumentationTests(unittest.TestCase):
         for asset in jeronix_layout.ASSETS:
             self.assertIn(f"`{asset}`", readme)
 
-    def test_manual_session_test_not_claimed(self):
-        # Until someone records a live-session run, docs must say it is pending.
+    def test_live_session_claims_are_recorded(self):
+        # Live-session results must come from the record, which must keep a
+        # list of what has not been verified yet.
         text = (ROOT / "docs" / "development" / "desktop-identity.md").read_text(encoding="utf-8")
-        self.assertRegex(text, r"\*\*not been\s+performed yet\*\*")
+        self.assertRegex(text, r"\*\*partially performed\*\*")
+        record = (ROOT / "docs" / "development" / "live-session-test.md").read_text(encoding="utf-8")
+        self.assertIn("## Not yet verified in a live session", record)
+        self.assertRegex(record, r"\| .* \| .* \| .*screenshot")
 
 
 if __name__ == "__main__":

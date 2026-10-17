@@ -31,8 +31,20 @@
       <summary>Show running applications that are not favorites</summary>
     </key>
     <key name="show-apps-button" type="b">
+      <default>false</default>
+      <summary>Show an applications button at the end of the dock (the Start button already opens the launcher)</summary>
+    </key>
+    <key name="show-start-button" type="b">
       <default>true</default>
-      <summary>Show the applications button (opens the JERONIX launcher)</summary>
+      <summary>Show the JERONIX Start button (opens the JERONIX Launcher) at the head of the dock</summary>
+    </key>
+    <key name="show-search-button" type="b">
+      <default>true</default>
+      <summary>Show the Search button (GNOME search: applications, files, settings)</summary>
+    </key>
+    <key name="magnify" type="b">
+      <default>true</default>
+      <summary>Magnify icons under the pointer</summary>
     </key>
     <key name="show-previews" type="b">
       <default>true</default>

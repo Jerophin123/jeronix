@@ -78,6 +78,10 @@ class StayAwakeIndicator extends SystemIndicator {
 
 export default class JeronixQuickSettingsExtension extends Extension {
     enable() {
+        // GNOME 50 can call enable() twice in a row (overlapping async
+        // passes in extensionSystem.js); never add a second toggle.
+        if (this._indicator)
+            return;
         this._indicator = new StayAwakeIndicator(this.uuid);
         Main.panel.statusArea.quickSettings.addExternalIndicator(this._indicator);
     }

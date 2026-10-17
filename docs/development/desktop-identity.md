@@ -21,9 +21,10 @@ session type.
 ## Manual test in a real GNOME Wayland session
 
 Everything below has been exercised automatically in an isolated headless
-GNOME Shell 50.1. The real-session test is a separate, human step, and it has
-**not been performed yet** at the VM's desktop. Record each result (with
-screenshots) in the milestone notes.
+GNOME Shell 50.1. The real-session test is a separate, human step: it has
+been **partially performed**, and what was and wasn't verified is recorded in
+[live-session-test.md](live-session-test.md). Add each new result (with
+screenshots) there.
 
 1. `scripts/run-tests.sh` passes.
 2. `scripts/install-desktop-dev.sh`, then log out and back in.

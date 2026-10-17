@@ -13,11 +13,13 @@ import {Dock} from './dock.js';
 
 export default class JeronixDockExtension extends Extension {
     enable() {
+        if (this._settings) // repeated enable() from overlapping passes: no-op
+            return;
         this._settings = this.getSettings();
         // A layout changes several keys at once; rebuild once, after the
         // burst, instead of once per key.
         this._settings.connectObject('changed', () => this._queueRebuild(), this);
-        this._dock = new Dock(this._settings);
+        this._dock = new Dock(this._settings, this.path);
     }
 
     _queueRebuild() {
@@ -26,7 +28,7 @@ export default class JeronixDockExtension extends Extension {
         this._rebuildId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._rebuildId = 0;
             this._dock?.destroy();
-            this._dock = new Dock(this._settings);
+            this._dock = new Dock(this._settings, this.path);
             return GLib.SOURCE_REMOVE;
         });
     }

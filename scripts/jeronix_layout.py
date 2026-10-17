@@ -68,6 +68,7 @@ ALLOWED = {
     "org.gnome.shell.extensions.ding": {"show-home", "show-trash", "show-volumes"},
     "org.gnome.shell.extensions.jeronix-dock": {
         "position", "behavior", "icon-size", "show-running", "show-apps-button", "show-previews",
+        "show-start-button", "show-search-button", "magnify",
     },
     "org.gnome.shell.extensions.jeronix-panel": {
         "show-menu-label", "show-workspaces", "show-window-context", "hide-activities",
@@ -433,18 +434,56 @@ def write_values(changes):
     Gio.Settings.sync()
 
 
-def write_extension_switches(layout):
+def _shell_extension_states(uuids):
+    """{uuid: state} from a running GNOME Shell, or None without one."""
+    Gio, GLib = _gio()
+    try:
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        states = {}
+        for uuid in uuids:
+            reply = bus.call_sync("org.gnome.Shell", "/org/gnome/Shell", "org.gnome.Shell.Extensions",
+                                  "GetExtensionInfo", GLib.Variant("(s)", (uuid,)), None,
+                                  Gio.DBusCallFlags.NONE, 2000, None)
+            states[uuid] = int(reply.unpack()[0].get("state", 0))
+        return states
+    except GLib.Error:
+        return None
+
+
+def _wait_until_stopped(uuids, timeout=8.0):
+    """Waits until a running shell has stopped these extensions.
+
+    GNOME Shell 50 handles extension-list changes asynchronously; writing
+    the second list while the first change is still being processed makes
+    two passes overlap and enable extensions twice. Without a shell (tests,
+    image builds) this returns at once."""
+    import time
+    deadline = time.monotonic() + timeout
+    while uuids:
+        states = _shell_extension_states(uuids)
+        if states is None or all(s != 1 for s in states.values()) or time.monotonic() > deadline:
+            return
+        time.sleep(0.2)
+
+
+def _write_lists(enabled, disabled, stopping):
     Gio, _ = _gio()
+    shell = settings_for("org.gnome.shell")
+    # Disable first so a replacement (Ubuntu dock -> JERONIX dock) never
+    # shows two docks at once, then let the shell finish before enabling.
+    shell.set_strv("disabled-extensions", disabled)
+    Gio.Settings.sync()
+    _wait_until_stopped(stopping)
+    shell.set_strv("enabled-extensions", enabled)
+    Gio.Settings.sync()
+
+
+def write_extension_switches(layout):
     ext = layout.get("extensions", {})
     if not (ext.get("enable") or ext.get("disable")):
         return
     enabled, disabled = switched_lists(layout, *extension_lists())
-    shell = settings_for("org.gnome.shell")
-    # Disable first so a replacement (Ubuntu dock -> JERONIX dock) never
-    # shows two docks at once.
-    shell.set_strv("disabled-extensions", disabled)
-    shell.set_strv("enabled-extensions", enabled)
-    Gio.Settings.sync()
+    _write_lists(enabled, disabled, list(ext.get("disable", [])))
 
 
 def apply(path, out=print):
@@ -539,15 +578,36 @@ def restore(path=None, out=print):
                 settings.get_default_value(e["key"]).unpack()
             _check_extension_restore(e["key"], restored, settings.get_strv(e["key"]))
         plan_.append((e, variant))
-    # Extension lists last, mirroring apply.
-    plan_.sort(key=lambda ev: ev[0]["key"] in EXTENSION_LIST_KEYS)
+    lists = {}
     for e, variant in plan_:
+        if e["schema"] == "org.gnome.shell" and e["key"] in EXTENSION_LIST_KEYS:
+            lists[e["key"]] = variant
+            continue
         settings = settings_for(e["schema"])
         if variant is None:
             settings.reset(e["key"])
         else:
             settings.set_value(e["key"], variant)
     Gio.Settings.sync()
+    # Extension lists last, mirroring apply: disabled first, and the shell
+    # must have stopped those extensions before enabled changes.
+    if lists:
+        shell = settings_for("org.gnome.shell")
+        target = {}
+        for key in EXTENSION_LIST_KEYS:
+            if key in lists:
+                v = lists[key]
+                target[key] = v.unpack() if v is not None else shell.get_default_value(key).unpack()
+            else:
+                target[key] = shell.get_strv(key)
+        stopping = sorted((set(shell.get_strv("enabled-extensions")) - set(target["enabled-extensions"]))
+                          | (set(target["disabled-extensions"]) - set(shell.get_strv("disabled-extensions"))))
+        _write_lists(target["enabled-extensions"], target["disabled-extensions"], stopping)
+        # Keys that were at their default go back to "unset", not a copy.
+        for key, v in lists.items():
+            if v is None:
+                shell.reset(key)
+        Gio.Settings.sync()
     out(f"restored {len(plan_)} settings from {path}")
     return path
 

@@ -82,6 +82,19 @@ class ExtensionSchemaTests(unittest.TestCase):
             with self.subTest(extension=ext.name):
                 self.assertTrue((ext / "README.md").is_file())
 
+    def test_enable_is_idempotent(self):
+        # GNOME 50 can call enable() twice when enabled-extensions and
+        # disabled-extensions change together (seen in a live session), so
+        # every extension that creates objects must ignore a second call.
+        for ext in extension_dirs():
+            src = (ext / "extension.js").read_text(encoding="utf-8")
+            body = re.search(r"\n    enable\(\) \{(.*?)\n    \}\n", src, re.S).group(1)
+            if not body.strip():
+                continue  # stylesheet-only extension
+            with self.subTest(extension=ext.name):
+                code = [line for line in body.splitlines() if line.strip() and not line.strip().startswith("//")]
+                self.assertRegex(code[0], r"^\s*if \(this\._\w+\)", "first statement must guard re-entry")
+
     def test_no_private_shell_internals(self):
         # Extensions may use the shell's exported classes and functions, but
         # not monkey-patch prototypes (InjectionManager is the supported way).

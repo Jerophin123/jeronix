@@ -67,6 +67,22 @@ def run(s):
 
     # Hover the running app's icon: previews open after a short delay.
     s.check("no scrollbar when every app fits", dock["overflow"] is False)
+    s.check("Windows 11-style Start and Search buttons lead the bar",
+            dock["startButton"] and dock["searchButton"])
+
+    # macOS-style magnification and label on a favorite that is not running.
+    fx, fy, fw, fh = dock["itemRects"][1]
+    s.pointer(fx + fw / 2 - 3, fy + fh / 2)
+    s.pointer(fx + fw / 2, fy + fh / 2)
+    mag = s.wait_for("magnification", lambda: (d := s.debug(DOCK))["magnification"][FAVORITES[1]] > 1.3 and d)
+    s.check("the hovered icon is magnified and its neighbors grow less",
+            1.1 < mag["magnification"][FAVORITES[0]] < 1.2 and 1.1 < mag["magnification"][FAVORITES[2]] < 1.2)
+    label = s.wait_for("hover label", lambda: s.debug(DOCK)["label"])
+    s.check(f"a label with the app name appears above the icon ({label!r})", label == "Text Editor")
+    s.screenshot("01b-magnify")
+    s.pointer(mx + mw / 2, my + mh / 3)
+    s.wait_for("magnification reset", lambda: all(v == 1 for v in s.debug(DOCK)["magnification"].values()))
+    s.check("leaving the dock restores icon sizes and hides the label", s.debug(DOCK)["label"] is None)
     ix, iy, iw, ih = dock["itemRects"][0]
     x, y, w, h = dock["rect"]
     s.check(f"dock container hugs the dock ({h}px = items {ih}px + padding + margin)", h <= ih + 2 * 8 + 2 + MARGIN + 2)

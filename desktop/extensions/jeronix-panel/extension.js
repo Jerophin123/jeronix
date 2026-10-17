@@ -200,6 +200,15 @@ class WindowContext extends PanelMenu.Button {
 
 export default class JeronixPanelExtension extends Extension {
     enable() {
+        // GNOME 50 can call enable() twice when enabled-extensions and
+        // disabled-extensions change in quick succession (two overlapping
+        // async passes in extensionSystem.js); the second call is a no-op.
+        if (this._settings)
+            return;
+        // A previous instance that failed half-way may have left its items
+        // registered; remove them so enabling always succeeds.
+        for (const role of ['jeronix-menu', 'jeronix-workspaces', 'jeronix-window-context'])
+            Main.panel.statusArea[role]?.destroy();
         this._settings = this.getSettings();
         this._menuButton = new JeronixMenuButton(this, this._settings);
         Main.panel.addToStatusArea('jeronix-menu', this._menuButton, 0, 'left');
