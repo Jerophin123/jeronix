@@ -3,7 +3,7 @@
 
 import System from 'system';
 
-import {Geometry, MARGIN, ITEM_PADDING, fitIconSize, dropIndex, taskbarRow, TRAY_GAP} from
+import {Geometry, MARGIN, ITEM_PADDING, fitIconSize, dropIndex, moduleSpan, taskbarRow, TRAY_GAP} from
     '../../../desktop/extensions/jeronix-dock/geometry.js';
 
 let failures = 0;
@@ -134,6 +134,57 @@ test('a left-aligned group starts at the left edge', () => {
     const r = taskbarRow({width: 1600, groupWidth: 500, trayWidth: 200, centered: false});
     assertEq(r.groupX, 0, 'start');
     assertEq(r.trayX, 1400, 'tray');
+});
+
+test('the live updates take the free left end of a centered bar', () => {
+    const r = taskbarRow({width: 1600, groupWidth: 500, trayWidth: 200, centered: true, liveWidth: 220});
+    assertEq(r.liveX, 0, 'at the left end');
+    assertEq(r.groupX + r.groupWidth / 2, 800, 'the apps stay centered');
+    assertEq(r.liveX + 220 <= r.groupX - TRAY_GAP, true, 'no overlap with the apps');
+});
+
+test('a left-aligned group follows the live updates, as in Windows 11', () => {
+    const r = taskbarRow({width: 1600, groupWidth: 500, trayWidth: 200, centered: false, liveWidth: 220});
+    assertEq(r.liveX, 0, 'live updates first');
+    assertEq(r.groupX, 220 + TRAY_GAP, 'then the apps');
+    assertEq(r.groupX + r.groupWidth <= r.trayX - TRAY_GAP, true, 'clear of the tray');
+});
+
+test('modules grow from their outer side toward their panel', () => {
+    const rects = {left: [8, 220], center: [520, 560], right: [1340, 252]};
+    assertEq(moduleSpan(rects, 'left', 370, 8, 1600), [8, 370], 'left grows to the right, to the panel width');
+    assertEq(moduleSpan(rects, 'right', 384, 8, 1600), [1592 - 384, 384], 'right grows to the left');
+    assertEq(moduleSpan(rects, 'center', 640, 8, 1600), [480, 640], 'center grows both ways');
+});
+
+test('modules never cover a neighbour, nor shrink', () => {
+    const rects = {left: [8, 220], center: [520, 560], right: [1340, 252]};
+    assertEq(moduleSpan(rects, 'right', 760, 8, 1600), [1088, 504], 'stops beside the apps');
+    assertEq(moduleSpan(rects, 'left', 900, 8, 1600), [8, 504], 'stops before the apps');
+    const tight = moduleSpan(rects, 'center', 1600, 8, 1600);
+    assertEq(tight[0] >= 8 + 220 + 8 && tight[0] + tight[1] <= 1340 - 8, true, 'between both neighbours');
+    assertEq(moduleSpan(rects, 'left', 100, 8, 1600), [8, 220], 'a narrower panel leaves it as it is');
+    assertEq(moduleSpan(rects, 'center', 300, 8, 1600), [520, 560], 'same for the center');
+});
+
+test('without live updates the center may grow into the free left', () => {
+    const rects = {left: null, center: [520, 560], right: [1340, 252]};
+    assertEq(moduleSpan(rects, 'center', 700, 8, 1600), [450, 700], 'room on both sides');
+    const start = {left: [0, 220], center: [228, 560], right: [1340, 252]};
+    assertEq(moduleSpan(start, 'center', 700, 8, 1600), [228, 700], 'no room on the left: grows right');
+    const both = {left: [0, 220], center: [298, 560], right: [1340, 252]};
+    assertEq(moduleSpan(both, 'center', 700, 8, 1600), [228, 700], 'what one side lacks, the other gives');
+});
+
+test('the live updates are hidden rather than squeezed', () => {
+    const narrow = taskbarRow({width: 1000, groupWidth: 700, trayWidth: 200, centered: true, liveWidth: 220});
+    assertEq(narrow.liveX, null, 'no room left of the apps');
+    assertEq(narrow.groupX, 1000 - 200 - TRAY_GAP - 700, 'the apps are not moved for it');
+    const start = taskbarRow({width: 900, groupWidth: 500, trayWidth: 200, centered: false, liveWidth: 220});
+    assertEq(start.liveX, null, 'no room before the apps');
+    assertEq(start.groupX, 0, 'the apps start at the left as without it');
+    assertEq(taskbarRow({width: 1600, groupWidth: 500, trayWidth: 200, centered: true}).liveX, null,
+        'none asked for');
 });
 
 print(`1..${count}`);

@@ -154,6 +154,14 @@ class MetadataEditTests(unittest.TestCase):
         with self.assertRaises(iso.BuildError):
             iso.edit_grub_cfg("menuentry \"Something else\" {}\n")
 
+    def test_disk_info_names_jeronix_for_the_installer(self):
+        out = iso.edit_disk_info('Ubuntu 26.04.1 LTS "Resolute Raccoon" - Release amd64 (20260826)\n', "26.04")
+        self.assertEqual(out, 'JERONIX 26.04 "Resolute Raccoon" - Release amd64 (20260826), Ubuntu 26.04.1 LTS base\n')
+        # The installer takes its product name and version up to the first quote.
+        self.assertEqual(out[:out.index('"') - 1], "JERONIX 26.04")
+        with self.assertRaises(iso.BuildError):
+            iso.edit_disk_info("Something else\n", "26.04")
+
     def test_install_sources(self):
         out = iso.edit_install_sources(SOURCES, 1000)
         self.assertIn("size: 6506546152", out)

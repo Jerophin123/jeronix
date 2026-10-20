@@ -95,6 +95,22 @@ class ExtensionSchemaTests(unittest.TestCase):
                 code = [line for line in body.splitlines() if line.strip() and not line.strip().startswith("//")]
                 self.assertRegex(code[0], r"^\s*if \(this\._\w+\)", "first statement must guard re-entry")
 
+    def test_disable_is_idempotent(self):
+        # disable() can be called twice too (seen in a live session when
+        # another extension was switched off); a second call must not throw.
+        # Either the first statement returns early, or disable() only
+        # reaches its objects through optional chaining.
+        for ext in extension_dirs():
+            src = (ext / "extension.js").read_text(encoding="utf-8")
+            body = re.search(r"\n    disable\(\) \{(.*?)\n    \}\n", src, re.S).group(1)
+            code = [line for line in body.splitlines() if line.strip() and not line.strip().startswith("//")]
+            if not code:
+                continue
+            with self.subTest(extension=ext.name):
+                guarded = re.match(r"^\s*if \(!this\._\w+\)$", code[0]) and code[1].strip() == "return;"
+                unguarded_use = re.search(r"this\._\w+\.(?!\?)\w", body)
+                self.assertTrue(guarded or not unguarded_use, "disable() must survive a second call")
+
     def test_no_private_shell_internals(self):
         # Extensions may use the shell's exported classes and functions, but
         # not monkey-patch prototypes (InjectionManager is the supported way).
@@ -128,3 +144,25 @@ class JavaScriptSyntaxTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ModuleGeometryTests(unittest.TestCase):
+    """The expandable modules' margin lives in code and in the stylesheet:
+    the panels line up with the right module only if they agree."""
+
+    def test_module_margin_matches_the_stylesheet(self):
+        dock = ROOT / "desktop" / "extensions" / "jeronix-dock"
+        margin = int(re.search(r"export const MODULE_MARGIN = (\d+);", (dock / "modules.js").read_text()).group(1))
+        css = (dock / "stylesheet.css.in").read_text(encoding="utf-8")
+        tokens = json.loads((ROOT / "design" / "tokens" / "tokens.json").read_text(encoding="utf-8"))
+
+        def px(value):
+            m = re.fullmatch(r"@space-([a-z]+)@", value.strip())
+            return tokens["spacing-px"][m.group(1)] if m else int(value.strip().rstrip("px"))
+
+        bar = re.search(r"\.jeronix-taskbar\.jeronix-modules \{[^}]*?padding: ([^;]+);", css).group(1)
+        rise = re.search(r"\.popup-menu-boxpointer\.jeronix-attached \{[^}]*?-arrow-rise: ([^;]+);", css).group(1)
+        self.assertEqual(px(bar), margin, "taskbar padding (the modules' margin)")
+        self.assertEqual(px(rise), margin, "attached panels keep the same margin from the screen edge")
+        test = (ROOT / "tests" / "integration" / "desktop_lifecycle.py").read_text(encoding="utf-8")
+        self.assertIn(f"MODULE_MARGIN = {margin}", test)

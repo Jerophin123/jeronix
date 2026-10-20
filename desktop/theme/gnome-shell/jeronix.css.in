@@ -388,3 +388,163 @@
 StEntry:focus {
   box-shadow: inset 0 0 0 @focus-width@ @focus-ring@ !important;
 }
+
+/* ---- Lock screen, login screen and log-out dialog -------------------------
+ * The lock screen keeps GNOME's blurred, darkened wallpaper, so its text is
+ * white in both modes and focus uses the light panel-accent blue. On the
+ * login screen this stylesheet is part of the JERONIX greeter theme
+ * (packaging/jeronix_greeter.py). Placed last so its focus rings win over
+ * the general ones above. */
+.unlock-dialog-clock {
+  color: @on-lock@;
+  spacing: @space-xs@;
+  padding-top: 64px;
+}
+
+.unlock-dialog-clock-time {
+  font-size: 64pt;
+  font-weight: 300;
+}
+
+.unlock-dialog-clock-date {
+  font-size: 1.6em;
+  font-weight: @weight-medium@;
+}
+
+.unlock-dialog-clock-hint {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: @font-caption@;
+  padding-top: @space-xxl@;
+}
+
+.unlock-dialog-notification-source {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: @radius-large@;
+  padding: @space-xs@ @space-sm@;
+  spacing: @space-xs@;
+}
+
+.unlock-dialog-notification-label,
+.unlock-dialog-notification-count-text {
+  color: @on-lock@;
+}
+
+.unlock-dialog .user-widget-label,
+.login-dialog .user-widget-label {
+  color: @on-lock@;
+  font-size: 1.4em;
+  font-weight: @weight-bold@;
+}
+
+.login-dialog-prompt-entry {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: @on-lock@;
+  border: @border-width@ solid rgba(255, 255, 255, 0.22);
+  border-radius: @radius-pill@;
+  padding: @space-xs@ @space-md@;
+  min-height: 34px;
+  caret-color: @on-lock@;
+  selection-background-color: rgba(96, 205, 255, 0.45);
+  transition-duration: @duration-fast@;
+}
+
+.login-dialog-prompt-entry:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+.login-dialog-prompt-entry:focus {
+  border-color: @panel-accent@;
+  box-shadow: inset 0 0 0 @focus-width@ @panel-accent@ !important;
+}
+
+.login-dialog-prompt-entry StLabel.hint-text {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.login-dialog-button,
+.login-dialog-button.cancel-button,
+.login-dialog-button.switch-user-button {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: @on-lock@;
+  border-radius: @radius-pill@;
+  padding: @space-xs@;
+  transition-duration: @duration-fast@;
+}
+
+.login-dialog-button:hover {
+  background-color: rgba(255, 255, 255, 0.24);
+}
+
+.login-dialog-button:active {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
+.login-dialog-button:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @panel-accent@ !important;
+}
+
+.login-dialog-message-hint,
+.login-dialog-banner,
+.login-dialog-not-listed-label {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.login-dialog-message-warning {
+  color: @lock-warning@;
+}
+
+.login-dialog-not-listed-button:hover .login-dialog-not-listed-label,
+.login-dialog-not-listed-button:focus .login-dialog-not-listed-label {
+  color: @on-lock@;
+}
+
+.login-dialog-user-list-item {
+  border-radius: @radius-medium@;
+  padding: @space-sm@;
+  transition-duration: @duration-fast@;
+}
+
+.login-dialog-user-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+.login-dialog-user-list-item:selected,
+.login-dialog-user-list-item:focus {
+  background-color: rgba(96, 205, 255, 0.20);
+  box-shadow: inset 0 0 0 @focus-width@ @panel-accent@ !important;
+}
+
+.login-dialog-timed-login-indicator {
+  background-color: @panel-accent@;
+}
+
+.end-session-dialog-battery-warning {
+  color: @warning@;
+}
+
+/* The JERONIX lock screen (desktop/extensions/jeronix-shell-theme/lockscreen.js):
+ * a large clock over the sharp wallpaper, a quiet hint at the bottom. */
+.jeronix-lock-clock {
+  spacing: @space-xxs@;
+}
+
+.jeronix-lock-time {
+  color: @on-lock@;
+  font-size: 96pt;
+  font-weight: 300;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.jeronix-lock-date {
+  color: @on-lock@;
+  font-size: 1.8em;
+  font-weight: @weight-medium@;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.jeronix-lock-hint {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: @font-caption@;
+  padding-bottom: @space-xxl@;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}

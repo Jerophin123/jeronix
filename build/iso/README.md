@@ -82,5 +82,5 @@ builder never calls sudo itself.
 | `casper/minimal.squashfs` (JERONIX files added) | shim, GRUB EFI, MOK manager, EFI partition (byte-identical); GRUB BIOS image except the boot-info fields xorriso patches on every mastering |
 | `boot/grub/grub.cfg`, `loopback.cfg` (menu titles only) | kernel, initrd, kernel command lines |
 | `casper/install-sources.yaml` (names and sizes), `minimal.size` | all other squashfs layers, language packs |
-| `md5sum.txt` | volume ID, `.disk/info`, APT pool |
-| added: `/jeronix/`, `/.disk/jeronix-info` | the Ubuntu installer |
+| `md5sum.txt`, `.disk/info` (product line: "JERONIX 26.04 ...", which the installer shows) | volume ID, APT pool |
+| added: `/jeronix/`, `/.disk/jeronix-info` | the Ubuntu installer snap (signed); JERONIX brands it through its own interface, `/usr/share/desktop-provision/` in the payload ([jeronix_installer.py](../../packaging/jeronix_installer.py)) |

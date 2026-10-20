@@ -47,12 +47,12 @@ class IconThemeTests(unittest.TestCase):
         parser.read_string(icons.index_theme())
         theme = parser["Icon Theme"]
         self.assertEqual(theme["Name"], "JERONIX")
-        self.assertEqual(theme["Inherits"].split(","), ["Yaru", "Adwaita", "hicolor"],
+        self.assertEqual(theme["Inherits"].split(","), ["Adwaita", "hicolor"],
                          "anything not drawn must fall back, so no app shows a missing icon")
         dirs = theme["Directories"].split(",")
         for d in dirs:
             self.assertEqual(parser[d]["Type"], "Scalable")
-        files_dirs = {str(Path(rel).parent) for rel in self.icons}
+        files_dirs = {str(Path(rel).parent) for rel in {**self.icons, **icons.status_icons()}}
         self.assertEqual(files_dirs, set(dirs))
 
     def test_required_icons_exist(self):
@@ -94,7 +94,8 @@ class IconThemeTests(unittest.TestCase):
             self.assertTrue((theme / "index.theme").is_file())
             for name in REQUIRED["apps"][:5]:
                 self.assertTrue((Path(tmp) / "icons" / "hicolor" / "scalable" / "apps" / f"{name}.svg").is_file())
-            self.assertEqual(len(built), len(self.icons) + 1 + 5)
+            self.assertEqual(len(built), len(self.icons) + len(icons.status_icons()) + 1 + 5)
+            self.assertTrue((theme / "scalable" / "status" / "network-wired-symbolic.svg").is_file())
 
     @unittest.skipUnless(renderable(), "gdk-pixbuf SVG loader not available")
     def test_every_icon_renders_at_small_and_large_sizes(self):
@@ -105,6 +106,44 @@ class IconThemeTests(unittest.TestCase):
                     stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(text.encode()))
                     pb = GdkPixbuf.Pixbuf.new_from_stream_at_scale(stream, size, size, True, None)
                     self.assertEqual((pb.get_width(), pb.get_height()), (size, size))
+
+
+class StatusIconTests(unittest.TestCase):
+    """The tray and Quick Settings icons: vendored Fluent UI System Icons."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.icons = icons.status_icons()
+
+    def test_tray_icons_are_covered(self):
+        for name in ("network-wired", "network-wireless-signal-excellent", "network-wireless-signal-none",
+                     "network-offline", "network-vpn", "audio-volume-high", "audio-volume-muted",
+                     "system-shutdown", "battery-level-50", "battery-level-50-charging", "bluetooth-active",
+                     "microphone-sensitivity-muted", "airplane-mode"):
+            with self.subTest(icon=name):
+                self.assertIn(f"scalable/status/{name}-symbolic.svg", self.icons)
+
+    def test_symbolic_one_ink_fill_only_with_license(self):
+        for rel, text in self.icons.items():
+            with self.subTest(icon=rel):
+                ET.fromstring(text.split("\n", 2)[2])
+                self.assertEqual(set(COLOR.findall(text)), {icons.SYMBOLIC_INK},
+                                 "GNOME recolors symbolic icons: one ink only")
+                self.assertNotIn("stroke", text, "strokes would not be recolored")
+                for bad in ("<image", "<script", "<text", "<style", "href"):
+                    self.assertNotIn(bad, text)
+                self.assertIn("SPDX-License-Identifier: MIT", text)
+
+    def test_vendored_files_are_paths_only_and_all_used(self):
+        fluent = Path(icons.FLUENT_DIR)
+        self.assertIn("MIT License", (fluent / "LICENSE").read_text(encoding="utf-8"))
+        files = {f.stem for f in fluent.glob("*.svg")}
+        self.assertEqual(files, set(icons.STATUS_ICONS.values()), "every file mapped, every mapping a file")
+        for f in fluent.glob("*.svg"):
+            with self.subTest(icon=f.name):
+                root = ET.fromstring(f.read_text(encoding="utf-8"))
+                self.assertRegex(root.attrib["viewBox"], r"^0 0 (16|20) (16|20)$")
+                self.assertEqual({el.tag.split("}")[-1] for el in root.iter()} - {"svg"}, {"path"})
 
 
 if __name__ == "__main__":

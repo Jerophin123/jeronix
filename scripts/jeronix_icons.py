@@ -6,17 +6,22 @@ Every icon is drawn on a 128 px grid with the same stroke weight (7 px,
 round caps and joins) and only design-token colors:
 
 * apps: graphite tile (the logo's tile) with an ivory glyph and
-  copper/sage accents;
-* places: copper folder with an ivory emblem;
+  blue/sage accents;
+* places: blue folder with an ivory emblem;
 * mimetypes: paper page with a folded corner and a type glyph.
 
-The theme inherits Yaru, Adwaita and hicolor, so any icon JERONIX does not
+The symbolic status icons (tray and Quick Settings) are not drawn here:
+they are Microsoft's Fluent UI System Icons (MIT), vendored in
+design/icons/fluent and mapped to GNOME's names (STATUS_ICONS).
+
+The theme inherits Adwaita and hicolor, so any icon JERONIX does not
 draw falls back to the system's. Output goes to <out>/icons/JERONIX (never
 committed); scripts/jeronix_design.py build calls this.
 
     scripts/jeronix_icons.py OUTDIR
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -24,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 THEME = "JERONIX"
-INHERITS = ("Yaru", "Adwaita", "hicolor")
+INHERITS = ("Adwaita", "hicolor")
 STROKE = 7
 J_PATH = "M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0 0 1 45.5 67V73A16.5 16.5 0 0 0 78.5 73Z"
 
@@ -32,8 +37,8 @@ J_PATH = "M78.5 31A6.5 6.5 0 0 1 91.5 31V73A29.5 29.5 0 0 1 32.5 73V67A6.5 6.5 0
 def palette(tokens):
     b = tokens["brand"]
     return {
-        "tile": b["graphite"], "glyph": b["ivory"], "accent": b["copper"], "accent2": b["sage"],
-        "accent-deep": b["copper-deep"], "seed": b["sage-light"], "paper": b["paper"], "sand": b["sand"],
+        "tile": b["graphite"], "glyph": b["ivory"], "accent": b["blue"], "accent2": b["sage"],
+        "accent-deep": b["blue-deep"], "seed": b["sage-light"], "paper": b["paper"], "sand": b["sand"],
         "line": tokens["color"]["light"]["border"], "ink": tokens["color"]["light"]["text"],
         "moss": b["moss"],
     }
@@ -83,7 +88,7 @@ def app_glyphs(c):
             f'<circle cx="64" cy="64" r="30" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
             + f'<circle cx="64" cy="49" r="5.5" fill="{a}"/>' + stroke("M64 62V80", g)),
         "io.jeronix.Welcome": (
-            "Welcome: the JERONIX J on a copper tile",
+            "Welcome: the JERONIX J on a blue tile",
             f'<g transform="translate(6 2) scale(0.9)"><path d="{J_PATH}" fill="{c["tile"]}"/>'
             f'<circle cx="55" cy="38" r="8.5" fill="{c["paper"]}"/></g>'),
         "org.gnome.Nautilus": (
@@ -112,6 +117,87 @@ def app_glyphs(c):
             "Image Viewer: a framed landscape",
             f'<rect x="32" y="38" width="64" height="52" rx="9" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
             + stroke("M38 82L56 64L68 74L78 66L90 78", a2) + f'<circle cx="78" cy="52" r="6" fill="{a}"/>'),
+        "org.gnome.Characters": (
+            "Characters: a capital A",
+            stroke("M42 92L64 36L86 92", g) + stroke("M51 74H77", a)),
+        "org.gnome.clocks": (
+            "Clocks: a clock face",
+            f'<circle cx="64" cy="64" r="30" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + stroke("M64 64V44", g) + stroke("M64 64L78 72", a) + f'<circle cx="64" cy="64" r="4.5" fill="{a}"/>'),
+        "org.gnome.baobab": (
+            "Disk Usage Analyzer: a ring chart",
+            f'<circle cx="64" cy="64" r="28" fill="none" stroke="{g}" stroke-width="11" stroke-opacity="0.85"/>'
+            + stroke("M64 36A28 28 0 0 1 92 64", a, 11) + f'<circle cx="64" cy="64" r="9" fill="{a2}"/>'),
+        "org.gnome.DiskUtility": (
+            "Disks: a drive with its light",
+            f'<rect x="30" y="46" width="68" height="36" rx="10" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + stroke("M42 64H62", g) + f'<circle cx="84" cy="64" r="5.5" fill="{a}"/>'),
+        "org.gnome.Papers": (
+            "Document Viewer: a page",
+            stroke("M42 32H74L90 48V96H42Z", g) + stroke("M74 32V48H90", g)
+            + stroke("M52 62H80M52 74H80", g) + stroke("M52 86H68", a)),
+        "org.gnome.font-viewer": (
+            "Fonts: Aa",
+            stroke("M30 90L48 40L66 90", g) + stroke("M37 74H59", g)
+            + f'<circle cx="84" cy="78" r="11" fill="none" stroke="{a}" stroke-width="{STROKE}"/>' + stroke("M95 66V90", a)),
+        "htop": (
+            "Process monitor: bars in a frame",
+            f'<rect x="32" y="36" width="64" height="56" rx="9" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + f'<rect x="43" y="64" width="9" height="18" rx="3" fill="{a}"/>'
+            + f'<rect x="57" y="52" width="9" height="30" rx="3" fill="{a}"/>'
+            + f'<rect x="71" y="60" width="9" height="22" rx="3" fill="{a2}"/>'),
+        "ibus-setup": (
+            "Input methods: a keyboard",
+            f'<rect x="28" y="44" width="72" height="42" rx="9" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + "".join(f'<circle cx="{x}" cy="{y}" r="3.6" fill="{g}"/>' for y in (56,) for x in (42, 54, 66, 78, 90))
+            + stroke("M46 72H82", a)),
+        "preferences-desktop-locale": (
+            "Language: a globe",
+            f'<circle cx="64" cy="64" r="30" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + f'<ellipse cx="64" cy="64" rx="13" ry="30" fill="none" stroke="{g}" stroke-width="{STROKE - 2}"/>'
+            + stroke("M35 64H93", a)),
+        "org.gnome.Logs": (
+            "Logs: entries in a list",
+            f'<circle cx="40" cy="44" r="5.5" fill="{a}"/><circle cx="40" cy="64" r="5.5" fill="{a2}"/>'
+            + f'<circle cx="40" cy="84" r="5.5" fill="{g}"/>' + stroke("M54 44H92M54 64H86M54 84H90", g)),
+        "org.gnome.seahorse.Application": (
+            "Passwords and Keys: a key",
+            f'<circle cx="46" cy="64" r="16" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + stroke("M62 64H96", g) + stroke("M84 64V76M94 64V73", a) + f'<circle cx="46" cy="64" r="5" fill="{a}"/>'),
+        "net.nokyan.Resources": (
+            "Resources: a gauge",
+            stroke("M36 82A30 30 0 1 1 92 82", g) + stroke("M64 74L80 52", a) + f'<circle cx="64" cy="74" r="6" fill="{a}"/>'),
+        "system-software-update": (
+            "Software Updater: a refresh arrow around a download",
+            stroke("M90 52A28 28 0 1 0 92 70", g) + stroke("M92 38V54H76", g)
+            + stroke("M64 48V76M54 66L64 76L74 66", a)),
+        "org.gnome.Sysprof": (
+            "Sysprof: a flame graph",
+            f'<rect x="34" y="80" width="60" height="11" rx="4" fill="{a}"/>'
+            + f'<rect x="40" y="65" width="44" height="11" rx="4" fill="{a2}"/>'
+            + f'<rect x="46" y="50" width="26" height="11" rx="4" fill="{g}"/>'
+            + f'<rect x="52" y="35" width="12" height="11" rx="4" fill="{g}" fill-opacity="0.7"/>'),
+        "jeronix-app-center": (
+            "App Center: a bag of apps",
+            stroke("M36 50H92L88 94H40Z", g) + stroke("M50 50V44A14 14 0 0 1 78 44V50", g)
+            + f'<rect x="54" y="62" width="9" height="9" rx="2.5" fill="{a}"/>'
+            + f'<rect x="66" y="62" width="9" height="9" rx="2.5" fill="{a2}"/>'
+            + f'<rect x="54" y="74" width="9" height="9" rx="2.5" fill="{g}"/>'
+            + f'<rect x="66" y="74" width="9" height="9" rx="2.5" fill="{a}"/>'),
+        "jeronix-security-center": (
+            "Security Center: a shield with a check",
+            stroke("M64 32L90 42V62C90 78 79 90 64 96C49 90 38 78 38 62V42Z", g) + stroke("M52 63L61 72L77 54", a)),
+        "jeronix-firmware-updater": (
+            "Firmware Updater: a chip being updated",
+            f'<rect x="40" y="40" width="48" height="48" rx="8" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + stroke("M52 32V40M64 32V40M76 32V40M52 88V96M64 88V96M76 88V96", g, 5)
+            + stroke("M64 54V74M56 66L64 74L72 66", a)),
+        "preferences-system-network": (
+            "Network settings: three connected devices",
+            stroke("M59 49L46 73M69 49L82 73M52 82H76", g)
+            + f'<circle cx="64" cy="40" r="9" fill="{a}"/>'
+            + f'<circle cx="42" cy="82" r="9" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'
+            + f'<circle cx="86" cy="82" r="9" fill="none" stroke="{g}" stroke-width="{STROKE}"/>'),
     }
 
 
@@ -125,6 +211,8 @@ APP_ALIASES = {
     "accessories-calculator": "org.gnome.Calculator",
     "utilities-system-monitor": "org.gnome.SystemMonitor",
     "image-viewer": "org.gnome.Loupe",
+    "btop": "htop",
+    "org.gnome.Characters.Devel": "org.gnome.Characters",
 }
 
 
@@ -221,18 +309,103 @@ MIME_ALIASES = {
 }
 
 
+# -- status icons -------------------------------------------------------------------
+#
+# The symbolic icons of the system tray and Quick Settings (network, sound,
+# power, battery, Bluetooth, ...) come from Microsoft's Fluent UI System
+# Icons (MIT), the set Windows 11 uses: the taskbar they sit on is
+# Windows 11-style. The SVGs are vendored in design/icons/fluent (paths
+# only, see its README) and given GNOME's names here. Symbolic icons are
+# recolored by GTK and GNOME Shell, so they are drawn in one ink.
+
+FLUENT_DIR = ROOT / "design" / "icons" / "fluent"
+SYMBOLIC_INK = "#2e3436"
+
+# GNOME icon name (without -symbolic) -> Fluent icon (design/icons/fluent).
+STATUS_ICONS = {
+    # wired, Wi-Fi, mobile broadband, VPN, airplane mode
+    "network-wired": "desktop", "network-wired-acquiring": "desktop",
+    "network-wired-disconnected": "plug_disconnected", "network-wired-no-route": "globe_error",
+    "network-wireless-signal-excellent": "wifi_1", "network-wireless-signal-good": "wifi_1",
+    "network-wireless-signal-ok": "wifi_2", "network-wireless-signal-weak": "wifi_3",
+    "network-wireless-signal-none": "wifi_4", "network-wireless-connected": "wifi_1",
+    "network-wireless-acquiring": "wifi_1", "network-wireless-encrypted": "wifi_lock",
+    "network-wireless-no-route": "wifi_warning", "network-wireless-offline": "wifi_off",
+    "network-wireless-disabled": "wifi_off", "network-wireless-hardware-disabled": "wifi_off",
+    "network-wireless-hotspot": "router",
+    "network-cellular-signal-excellent": "cellular_data_1", "network-cellular-signal-good": "cellular_data_2",
+    "network-cellular-signal-ok": "cellular_data_3", "network-cellular-signal-weak": "cellular_data_4",
+    "network-cellular-signal-none": "cellular_data_5", "network-cellular-connected": "cellular_data_1",
+    "network-cellular-acquiring": "cellular_data_5", "network-cellular-no-route": "cellular_off",
+    "network-cellular-offline": "cellular_off", "network-cellular-disabled": "cellular_off",
+    "network-cellular-hardware-disabled": "cellular_off",
+    "network-vpn": "shield_lock", "network-vpn-acquiring": "shield_lock",
+    "network-offline": "globe_off", "network-error": "globe_error", "network-no-route": "globe_error",
+    "airplane-mode": "airplane",
+    # sound and microphone
+    "audio-volume-muted": "speaker_mute", "audio-volume-low": "speaker_0", "audio-volume-medium": "speaker_1",
+    "audio-volume-high": "speaker_2", "audio-volume-overamplified": "speaker_2",
+    "audio-input-microphone": "mic", "audio-input-microphone-high": "mic", "audio-input-microphone-medium": "mic",
+    "audio-input-microphone-low": "mic", "audio-input-microphone-muted": "mic_off",
+    "microphone-sensitivity-high": "mic", "microphone-sensitivity-medium": "mic",
+    "microphone-sensitivity-low": "mic", "microphone-sensitivity-muted": "mic_off",
+    "microphone-disabled": "mic_off", "microphone-hardware-disabled": "mic_prohibited",
+    # the session
+    "system-shutdown": "power", "system-reboot": "arrow_clockwise", "system-log-out": "sign_out",
+    "system-lock-screen": "lock_closed",
+    # Bluetooth
+    "bluetooth-active": "bluetooth", "bluetooth-disconnected": "bluetooth", "bluetooth-acquiring": "bluetooth_searching",
+    "bluetooth-disabled": "bluetooth_disabled", "bluetooth-hardware-disabled": "bluetooth_disabled",
+    # battery
+    **{f"battery-level-{n}": f"battery_{n // 10}" for n in range(0, 101, 10)},
+    **{f"battery-level-{n}-charging": "battery_charge" for n in range(0, 100, 10)},
+    **{f"battery-level-{n}-plugged-in": "battery_charge" for n in range(0, 101, 10)},
+    "battery-level-100-charged": "battery_checkmark", "battery-missing": "battery_warning",
+    "battery-caution": "battery_warning", "battery-low": "battery_1",
+    # Quick Settings toggles and privacy indicators
+    "night-light": "weather_moon", "night-light-disabled": "weather_moon_off",
+    "notifications-disabled": "alert_off", "display-brightness": "brightness_high",
+    "power-profile-balanced": "gauge", "power-profile-performance": "flash", "power-profile-power-saver": "leaf_two",
+    "camera-web": "video", "camera-disabled": "video_off", "camera-hardware-disabled": "video_off",
+    "location-services-active": "location", "location-services-disabled": "location_off",
+    "screen-shared": "share_screen_start", "stopwatch": "timer",
+}
+
+
+def fluent_svg(name, title):
+    """A vendored Fluent icon as a JERONIX symbolic icon, in the symbolic ink."""
+    src = (FLUENT_DIR / f"{name}.svg").read_text(encoding="utf-8")
+    size = re.search(r'viewBox="0 0 (\d+) \d+"', src).group(1)
+    paths = re.findall(r"<path [^>]*/>", src)
+    body = "".join(p.replace("<path ", f'<path fill="{SYMBOLIC_INK}" ', 1) for p in paths)
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            f"<!-- JERONIX icon theme: {title}. Fluent UI System Icons ({name}), Copyright (c) 2020 "
+            "Microsoft Corporation. SPDX-License-Identifier: MIT -->\n"
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 {size} {size}">'
+            f"{body}</svg>\n")
+
+
+def status_icons():
+    """{relative path: svg text} for the symbolic status icons."""
+    return {f"scalable/status/{name}-symbolic.svg": fluent_svg(fluent, name)
+            for name, fluent in STATUS_ICONS.items()}
+
+
 # -- theme --------------------------------------------------------------------------
 
-DIRECTORIES = {"scalable/apps": "Applications", "scalable/places": "Places", "scalable/mimetypes": "MimeTypes"}
+# directory -> (context, nominal size)
+DIRECTORIES = {"scalable/apps": ("Applications", 128), "scalable/places": ("Places", 128),
+               "scalable/mimetypes": ("MimeTypes", 128), "scalable/status": ("Status", 16)}
 
 
 def index_theme():
     lines = ["[Icon Theme]", f"Name={THEME}",
-             "Comment=Original JERONIX icons; everything else falls back to Yaru and Adwaita",
+             "Comment=Original JERONIX icons and Fluent status icons; everything else falls back to Adwaita",
              f"Inherits={','.join(INHERITS)}", "Example=folder",
              f"Directories={','.join(DIRECTORIES)}", ""]
-    for directory, context in DIRECTORIES.items():
-        lines += [f"[{directory}]", "Size=128", "MinSize=8", "MaxSize=512", "Type=Scalable", f"Context={context}", ""]
+    for directory, (context, size) in DIRECTORIES.items():
+        lines += [f"[{directory}]", f"Size={size}", "MinSize=8", "MaxSize=512", "Type=Scalable",
+                  f"Context={context}", ""]
     return "\n".join(lines)
 
 
@@ -260,7 +433,7 @@ def build(tokens, out):
     """Writes <out>/icons/JERONIX and the JERONIX app icons into hicolor."""
     theme = Path(out) / "icons" / THEME
     built = []
-    for rel, text in icons(tokens).items():
+    for rel, text in {**icons(tokens), **status_icons()}.items():
         path = theme / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")

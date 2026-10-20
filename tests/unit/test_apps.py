@@ -124,7 +124,7 @@ class SystemInfoTests(unittest.TestCase):
 
     def test_collect_and_report_on_this_machine(self):
         info = collect.collect()
-        for key in ("JERONIX", "Base system", "Kernel", "GNOME Shell", "Processor", "Memory"):
+        for key in ("JERONIX", "Operating system", "Kernel", "GNOME Shell", "Processor", "Memory"):
             self.assertIn(key, info)
         text = collect.report(info, {"jeronix-dock@jeronix": "active"}, {"GTK": "4.22"})
         self.assertIn("JERONIX system report", text)
@@ -151,18 +151,90 @@ class PreviewAndStyleTests(unittest.TestCase):
         self.assertIn("stroke-dasharray", svgs[("studio", "dark")], "autohide dock is drawn as hidden")
         self.assertNotIn("stroke-dasharray", svgs[("classic", "dark")])
 
+    def test_previews_draw_the_shell_of_today(self):
+        shapes = {name: previews.shape(layout) for name, layout in self.layouts.items()}
+        self.assertEqual({n: s["style"] for n, s in shapes.items()},
+                         {"pure": "modules", "classic": "taskbar", "studio": "floating"})
+        self.assertFalse(shapes["pure"]["top_bar"], "the bar carries the tray: no top bar")
+        self.assertFalse(shapes["classic"]["top_bar"])
+        self.assertTrue(shapes["studio"]["top_bar"], "a side dock keeps GNOME's top bar")
+        self.assertTrue(shapes["pure"]["live"] and shapes["pure"]["tray"])
+        self.assertFalse(shapes["studio"]["live"] or shapes["studio"]["tray"])
+        # Pure: three modules (live updates, Start and apps, tray) with Start's J.
+        svg = previews.layout_preview_svg(self.layouts["pure"], self.tokens)
+        self.assertEqual(svg.count("rx='8'"), 3)
+        self.assertIn("stroke-linecap='round'/>", svg)
+        # Defaults stand in for keys a layout leaves out.
+        self.assertEqual(previews.shape({"settings": []})["style"], "modules")
+        self.assertEqual(previews.shape({"settings": [{"schema": "x.jeronix-dock", "key": "position",
+                                                       "value": "left"}]})["style"], "floating")
+
     def test_app_css_uses_token_colors(self):
         for mode in ("dark", "light"):
             css = style.css_for(self.tokens, mode)
             p = self.tokens["color"][mode]
             self.assertIn(f"--window-bg-color: {p['surface']};", css)
-            self.assertIn(f"--accent-bg-color: {p['accent']};", css)
+            self.assertNotIn("--accent-bg-color:", css, "the accent follows Settings")
+            self.assertIn("var(--accent-bg-color)", css)
             self.assertEqual(css.count("{"), css.count("}"))
 
     def test_paths_from_checkout(self):
         self.assertEqual(paths.tokens_file(), ROOT / "design" / "tokens" / "tokens.json")
         self.assertEqual(paths.layouts_dir(), ROOT / "desktop" / "layouts")
         self.assertTrue(hasattr(paths.layout_tool(), "apply"))
+
+
+def _studio():
+    """The Layout Studio module, if GTK 4 and libadwaita can be imported."""
+    try:
+        from layout_studio import studio
+        return studio
+    except (ImportError, ValueError):
+        return None
+
+
+@unittest.skipUnless(_studio(), "GTK 4 / libadwaita not available")
+class LayoutStudioTests(unittest.TestCase):
+    """The words and grouping Layout Studio shows (no window needed)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.studio = _studio()
+
+    def test_values_in_words(self):
+        human = self.studio.human
+        self.assertEqual(human("style", "'modules'"), "Floating modules")
+        self.assertEqual(human("behavior", "'intellihide'"), "Steps aside under windows")
+        self.assertEqual(human("live-updates", "true"), "On")
+        self.assertEqual(human("icon-size", "32"), "32 px")
+        self.assertEqual(human("button-layout", "'appmenu:minimize,maximize,close'"), "Minimize, maximize, close")
+        self.assertEqual(human("switch-to-workspace-1", "['<Super>1']"), "Super+1")
+        self.assertEqual(human("switch-to-application-1", "@as []"), "None")
+        self.assertEqual(human("picture-uri", "'file:///usr/share/backgrounds/jeronix/dark.png'"), "dark.png")
+
+    def test_every_layout_setting_has_a_label_and_section(self):
+        for path in (ROOT / "desktop" / "layouts").glob("*.json"):
+            for s in json.loads(path.read_text())["settings"]:
+                with self.subTest(layout=path.stem, key=s["key"]):
+                    label, section = self.studio.label_for(s)
+                    self.assertIn(section, self.studio.SECTIONS)
+                    self.assertNotEqual(label, s["key"], "a word label, not the raw key")
+
+    def test_in_use_follows_the_shape(self):
+        def plan(style, position, alignment, changed=(), dock_on=True):
+            rows = [{"schema": self.studio.DOCK, "key": k, "new": f"'{v}'", "current": "", "changed": k in changed}
+                    for k, v in (("style", style), ("position", position), ("alignment", alignment),
+                                 ("icon-size", "32"))]
+            return {"settings": rows, "extensions": [{"uuid": "jeronix-dock@jeronix", "action": "enable",
+                                                       "changed": not dock_on}]}
+        in_use = self.studio.in_use
+        self.assertTrue(in_use(plan("modules", "bottom", "center", changed=("icon-size",))),
+                        "an icon size apart is still the layout in use")
+        self.assertFalse(in_use(plan("modules", "bottom", "center", changed=("style",))))
+        self.assertTrue(in_use(plan("floating", "right", "center", changed=("alignment",))),
+                        "a floating dock has no alignment")
+        self.assertFalse(in_use(plan("modules", "bottom", "center", dock_on=False)))
+
 
 
 class DesktopEntryAndStagingTests(unittest.TestCase):

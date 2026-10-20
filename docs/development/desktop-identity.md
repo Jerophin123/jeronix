@@ -29,13 +29,13 @@ screenshots) there.
 1. `scripts/run-tests.sh` passes.
 2. `scripts/install-desktop-dev.sh`, then log out and back in.
 3. Open **Layout Studio** from the app grid. Pick **Pure** → Apply.
-   - The top bar shows the copper J and "JERONIX" instead of Activities.
+   - The top bar shows the blue J and "JERONIX" instead of Activities.
      Ubuntu's dock is gone, and a floating dock appears at the bottom.
    - Hover a running app in the dock: a window preview appears. Maximize a
      window: the dock hides, and touching the bottom edge brings it back.
    - The JERONIX menu offers Search Applications (also **Super+J**), Layout
      Studio, Settings, System Information, Lock, Log Out and Power Off.
-   - Files and folders show JERONIX icons, and the wallpaper is the copper J.
+   - Files and folders show JERONIX icons, and the wallpaper is the blue J.
 4. Apply **Studio**: four numbered workspaces in the top bar, Super+1…4
    switch between them, and the dock hides on the right edge.
 5. Apply **Classic**: the dock is always visible on the left, and maximized
@@ -44,7 +44,7 @@ screenshots) there.
    `gnome-session-inhibit --list` shows it). Wi-Fi, sound and power controls
    are GNOME's own and behave as before.
 7. Keyboard only: Ctrl+Alt+Tab reaches the top bar and the dock, the arrow
-   keys move between items, and every item shows a copper focus ring.
+   keys move between items, and every item shows a blue focus ring.
 8. Settings → Appearance → Style: switch Light/Dark. The shell, dock and
    JERONIX apps follow without a logout.
 9. Layout Studio → Restore… → restore the oldest snapshot. Ubuntu's dock,

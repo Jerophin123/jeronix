@@ -2,8 +2,10 @@
 """JERONIX styling for libadwaita apps, generated from the design tokens.
 
 libadwaita 1.9 exposes its palette as CSS custom properties (--window-bg-color,
---accent-bg-color, ...). JERONIX apps override them with token colors for the
-current light/dark style and add a few JERONIX classes. Nothing here affects
+--accent-bg-color, ...). JERONIX apps override the surface and text colors with
+token colors for the current light/dark style and add a few JERONIX classes.
+The accent is left to libadwaita, which follows the accent chosen in Settings
+as it changes; JERONIX classes use it through var(). Nothing here affects
 other applications.
 """
 
@@ -42,9 +44,6 @@ def css_for(tokens, mode):
         "popover-fg-color": p["text"],
         "dialog-bg-color": p["surface-raised"],
         "dialog-fg-color": p["text"],
-        "accent-bg-color": p["accent"],
-        "accent-fg-color": p["on-accent"],
-        "accent-color": p["accent-strong"],
         "success-color": p["success"],
         "warning-color": p["warning"],
         "error-color": p["danger"],
@@ -56,14 +55,25 @@ def css_for(tokens, mode):
         # JERONIX classes used by the apps.
         f".jeronix-hero {{ font-size: {tokens['typography']['scale']['display']}em; font-weight: 700; }}",
         f".jeronix-subtitle {{ color: {p['text-muted']}; }}",
-        f".jeronix-eyebrow {{ color: {p['accent-strong']}; font-weight: 700; font-size: 0.82em; }}",
+        ".jeronix-eyebrow { color: var(--accent-color); font-weight: 700; font-size: 0.82em; }",
         f".jeronix-tile {{ border-radius: {r['medium']}px; padding: {s['sm']}px; }}",
         f".jeronix-tile:hover {{ background-color: {_rgba(p['text'], tokens['interaction']['hover-opacity'])}; }}",
         f".jeronix-tile:selected, flowboxchild:selected .jeronix-tile {{ background-color: "
-        f"{_rgba(p['accent'], tokens['interaction']['selected-opacity'])}; }}",
+        f"color-mix(in srgb, var(--accent-bg-color) {tokens['interaction']['selected-opacity'] * 100:g}%, "
+        "transparent); }",
         f".jeronix-card {{ background-color: {p['surface-raised']}; border-radius: {r['large']}px; "
         f"border: 1px solid {p['border']}; padding: {s['md']}px; }}",
-        f".jeronix-card.selected {{ border: 2px solid {p['accent']}; }}",
+        ".jeronix-card.selected { border: 2px solid var(--accent-bg-color); }",
+        "flowboxchild:selected .jeronix-card { border: 2px solid var(--accent-bg-color); }",
+        ".jeronix-swatch { min-width: 30px; min-height: 30px; padding: 0; border-radius: 999px; "
+        "box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }",
+        ".jeronix-swatch:checked { box-shadow: 0 0 0 3px var(--window-bg-color), 0 0 0 5px currentColor; }",
+        *(f".jeronix-swatch-{name} {{ background: {color}; color: {color}; }}" for name, color in (
+            ("blue", "#3584e4"), ("teal", "#2190a4"), ("green", "#3a944a"), ("yellow", "#c88800"),
+            ("orange", "#ed5b00"), ("red", "#e62d42"), ("pink", "#d56199"), ("purple", "#9141ac"),
+            ("slate", "#6f8396"))),
+        f".jeronix-badge {{ background-color: var(--accent-bg-color); color: var(--accent-fg-color); "
+        f"border-radius: {r['pill']}px; padding: 2px {s['xs']}px; font-size: 0.82em; font-weight: 700; }}",
         f".jeronix-sidebar {{ background-color: {p['surface-overlay']}; }}",
         f".jeronix-search {{ font-size: 1.18em; min-height: 44px; border-radius: {r['medium']}px; }}",
         f".jeronix-key {{ font-family: monospace; padding: 2px {s['xs']}px; border-radius: {r['small']}px; "

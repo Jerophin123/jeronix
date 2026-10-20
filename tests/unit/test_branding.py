@@ -13,6 +13,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import jeronix_design as design  # noqa: E402
 
 ICONS = ROOT / "design" / "icons"
+# Vendored third-party icons (MIT, see its README), checked in test_icons.py.
+THIRD_PARTY = "fluent"
 SVG_NS = "{http://www.w3.org/2000/svg}"
 REQUIRED = {
     "jeronix-mark.svg": (128, 128),
@@ -77,7 +79,8 @@ class LogoTests(unittest.TestCase):
                 root = ET.fromstring(text)
                 self.assertEqual(root.tag, f"{SVG_NS}svg")
                 self.assertIn("viewBox", root.attrib)
-                self.assertIn("SPDX-License-Identifier: CC-BY-SA-4.0", text)
+                if THIRD_PARTY not in svg.relative_to(ICONS).parts:
+                    self.assertIn("SPDX-License-Identifier: CC-BY-SA-4.0", text)
                 for bad in ("<image", "<script", "<text", "<style", "href=", "@import", "font-family"):
                     self.assertNotIn(bad, text, "assets must not depend on fonts, scripts or files")
 
@@ -91,7 +94,9 @@ class LogoTests(unittest.TestCase):
 
     def test_brand_artwork_uses_token_colors(self):
         allowed = token_colors(self.tokens)
-        for svg in sorted(ICONS.rglob("*.svg")):
+        # design/icons/archive keeps retired artwork in its original palette.
+        for svg in sorted(p for p in ICONS.rglob("*.svg")
+                          if not {"archive", THIRD_PARTY} & set(p.relative_to(ICONS).parts)):
             with self.subTest(svg=svg.name):
                 used = {c.upper() for c in COLOR.findall(svg.read_text(encoding="utf-8"))}
                 self.assertLessEqual(used, allowed, f"colors not in tokens: {used - allowed}")

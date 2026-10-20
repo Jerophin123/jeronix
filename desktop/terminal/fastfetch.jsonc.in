@@ -1,0 +1,34 @@
+// JERONIX fastfetch configuration (desktop/terminal/fastfetch.jsonc.in).
+// The JERONIX J in blue with its sage seed; system details below the title.
+{
+  "logo": {
+    "type": "file",
+    "source": "@LOGO@",
+    "color": {"1": "38;5;33", "2": "38;5;151"},
+    "padding": {"top": 1, "left": 1, "right": 3}
+  },
+  "display": {
+    "separator": "  ",
+    "color": {"keys": "38;5;75", "title": "38;5;75"}
+  },
+  "modules": [
+    "title",
+    "separator",
+    {"type": "os", "key": "OS"},
+    {"type": "kernel", "key": "Kernel"},
+    {"type": "uptime", "key": "Uptime"},
+    {"type": "packages", "key": "Packages"},
+    {"type": "shell", "key": "Shell"},
+    {"type": "display", "key": "Display"},
+    {"type": "de", "key": "Desktop"},
+    {"type": "theme", "key": "Theme"},
+    {"type": "icons", "key": "Icons"},
+    {"type": "terminal", "key": "Terminal"},
+    {"type": "cpu", "key": "CPU"},
+    {"type": "gpu", "key": "GPU"},
+    {"type": "memory", "key": "Memory"},
+    {"type": "disk", "key": "Disk"},
+    "break",
+    "colors"
+  ]
+}

@@ -137,7 +137,7 @@ def collect(etc="/etc", proc="/proc", sys_drm="/sys/class/drm"):
     d = disk("/")
     return {
         "JERONIX": jx.get("VERSION", "development (not installed as a package)"),
-        "Base system": os_release.get("PRETTY_NAME", "unknown"),
+        "Operating system": os_release.get("PRETTY_NAME", "unknown"),
         "Kernel": platform.release(),
         "Architecture": platform.machine(),
         "GNOME Shell": gnome_shell_version(),

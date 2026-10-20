@@ -21,11 +21,12 @@ GNOME 50.
 | Pure layout ([desktop/layouts/pure.json](desktop/layouts/pure.json)) | Validated GSettings layout with snapshot and restore | Sandboxed apply/restore tests |
 | `jeronix-quick-settings` extension | Stay Awake toggle | Unit tests and headless GNOME Shell lifecycle test |
 | `jeronix-panel` extension | JERONIX menu instead of Activities, workspace pills, focused-app context, Super+J | Headless shell tests |
-| `jeronix-dock` extension | Floating dock: favorites, running apps, previews, bottom/left/right, intellihide/autohide/always | gjs geometry tests and headless shell tests (34 checks) |
+| `jeronix-dock` extension | Windows 11 taskbar or floating dock: Start menu with its own pins (right-click to pin), macOS-style Control Center (customizable, never GNOME's grid), favorites, running apps, previews, bottom/left/right, intellihide/autohide/always | gjs unit tests and headless shell tests (66 checks) |
 | JERONIX icon theme | Original app, folder and file-type icons; inherits Yaru/Adwaita | Icon tests (validity, colors, rendering) |
-| Apps ([apps/](apps/README.md)) | Launcher, Layout Studio, Settings, System Information, Welcome (GTK 4 / libadwaita) | Logic unit tests; each app started on a headless shell |
+| Apps ([apps/](apps/README.md)) | Launcher, Layout Studio, Settings (macOS-style, 25 native pages, no GNOME Settings), System Information, Welcome (GTK 4 / libadwaita) | Logic unit tests; each app, and every Settings page, opened on a headless shell |
 | Layouts ([desktop/layouts/](desktop/layouts/README.md)) | Pure, Classic, Studio, with reversible Ubuntu Dock ↔ JERONIX dock switching | Sandboxed round trips and a headless shell running Ubuntu Dock |
 | `jeronix-desktop` package ([packaging/](packaging/jeronix_payload.py)) | All of the above plus Pure as dconf system defaults | Payload and .deb tests |
+| System identity ([docs/development/system-branding.md](docs/development/system-branding.md)) | JERONIX login screen, lock screen, boot splash, OS name, terminal palette, prompt and fastfetch, JERONIX colors in every GTK 4 app, blue accent; every change undone by removing the package | Unit tests, headless shell lock-screen test, St parser check of the login theme |
 | ISO builder ([build/iso/](build/iso/README.md)) | Verified Ubuntu 26.04.1 source, rebuilt base layer, unchanged signed boot chain | Builder tests and image validation; boot test pending |
 
 The Milestone 4 visuals have been checked automatically, but not yet in a

@@ -2,7 +2,7 @@
   "schema": 2,
   "id": "classic",
   "name": "Classic",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "summary": "Familiar and always there: a left-aligned taskbar with Start, apps, tray and clock, full title bars and your desktop icons.",
   "description": "A familiar desktop: a full-width taskbar along the bottom with Start, search and apps on the left and Quick Settings, notifications and the clock on the right; minimize and maximize buttons on every window; desktop icons kept. No hot corner, so nothing happens by surprise.",
   "gnome_shell": [
@@ -10,19 +10,23 @@
   ],
   "settings": [
     {"schema": "org.gnome.desktop.interface", "key": "icon-theme", "value": "JERONIX",
-     "reason": "Original JERONIX icons; anything JERONIX does not draw falls back to Yaru and Adwaita."},
+     "reason": "Original JERONIX icons; anything JERONIX does not draw falls back to Adwaita."},
     {"schema": "org.gnome.desktop.sound", "key": "theme-name", "value": "freedesktop",
-     "reason": "Neutral system sounds instead of Ubuntu's Yaru sound theme."},
+     "reason": "Neutral, quiet system sounds."},
     {"schema": "org.gnome.desktop.interface", "key": "gtk-theme", "value": "Adwaita-dark",
-     "reason": "Older (GTK 3) applications use GNOME's neutral dark theme instead of Ubuntu's Yaru."},
+     "reason": "Older (GTK 3) applications use a neutral dark theme with a blue accent."},
     {"schema": "org.gnome.desktop.interface", "key": "font-name", "value": "Noto Sans 11",
-     "reason": "A neutral interface typeface instead of Ubuntu's own."},
+     "reason": "A neutral, highly legible interface typeface."},
     {"schema": "org.gnome.desktop.interface", "key": "document-font-name", "value": "Noto Sans 11",
      "reason": "Documents use the same neutral typeface."},
     {"schema": "org.gnome.desktop.interface", "key": "color-scheme", "value": "prefer-dark",
      "reason": "JERONIX's primary dark look."},
-    {"schema": "org.gnome.desktop.interface", "key": "accent-color", "value": "slate",
-     "reason": "Ubuntu shows the slate accent as Yaru sage, the JERONIX secondary color, instead of Ubuntu orange."},
+    {"schema": "org.gnome.desktop.interface", "key": "accent-color", "value": "blue",
+     "reason": "Blue is the JERONIX accent: buttons, switches and selections in every app."},
+    {"schema": "org.gnome.desktop.interface", "key": "monospace-font-name", "value": "Noto Sans Mono 11",
+     "reason": "A neutral monospace typeface for the terminal and code."},
+    {"schema": "org.gnome.desktop.interface", "key": "cursor-theme", "value": "Adwaita",
+     "reason": "The neutral pointer."},
     {"schema": "org.gnome.desktop.interface", "key": "enable-hot-corners", "value": false,
      "reason": "Nothing opens unless you ask for it."},
     {"schema": "org.gnome.desktop.interface", "key": "clock-show-weekday", "value": true,
@@ -33,8 +37,6 @@
      "reason": "Double-click a title bar to maximize, as on most desktops."},
     {"schema": "org.gnome.mutter", "key": "dynamic-workspaces", "value": true,
      "reason": "Workspaces appear as needed."},
-    {"schema": "org.gnome.mutter", "key": "edge-tiling", "value": true,
-     "reason": "Drag-to-edge tiling."},
     {"schema": "org.gnome.mutter", "key": "center-new-windows", "value": true,
      "reason": "New windows open in the middle of the screen."},
     {"schema": "org.gnome.desktop.background", "key": "picture-uri", "value": {"asset": "wallpaper-light"},
@@ -70,7 +72,17 @@
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "hide-top-bar", "value": true,
      "reason": "One bar: GNOME's top bar is hidden while the taskbar carries the tray."},
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-task-view-button", "value": true,
-     "reason": "Task View opens the windows and workspaces overview."}
+     "reason": "Task View opens the windows and workspaces overview."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-start-button", "value": true,
+     "reason": "A Start button at the head of the taskbar."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-search-button", "value": true,
+     "reason": "Search finds apps, files and settings from the taskbar."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "super-key-start-menu", "value": true,
+     "reason": "The Super key opens Start, as the Windows key does."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "hide-overview-dash", "value": true,
+     "reason": "Task View shows windows and workspaces only; apps live in Start."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "live-updates", "value": true,
+     "reason": "The free end of the taskbar shows what is going on and opens the widgets."}
   ],
   "extensions": {
     "enable": [
@@ -84,6 +96,7 @@
     ]
   },
   "limitations": [
+    "Window snapping is left to the system: GNOME's edge tiling, or Ubuntu's Tiling Assistant where it is installed (it turns GNOME's off while it runs).",
     "Desktop icons (ding) are left as they are.",
     "The dock lives on the primary monitor only."
   ]

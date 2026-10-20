@@ -74,9 +74,6 @@ class JeronixMenuButton extends PanelMenu.Button {
             'help-about-symbolic');
         this._item(_('Welcome Tour'), () => launchApp(JERONIX_APPS.welcome),
             'starred-symbolic');
-        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        this._item(_('GNOME Settings'), () => launchApp('org.gnome.Settings.desktop'),
-            'emblem-system-symbolic');
 
         const actions = SystemActions.getDefault();
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
@@ -252,6 +249,11 @@ export default class JeronixPanelExtension extends Extension {
     }
 
     disable() {
+        // Like enable(), disable() can be called twice by overlapping
+        // passes (seen when another extension is switched off); the
+        // second call must not touch what the first one released.
+        if (!this._settings)
+            return;
         Main.wm.removeKeybinding('launcher-shortcut');
         Main.panel.remove_style_class_name('jeronix-panel');
         this._settings.disconnectObject(this);

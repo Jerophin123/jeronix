@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/* JERONIX menu button: copper symbol and spaced wordmark. */
+/* JERONIX menu button: blue symbol and spaced wordmark. */
 .jeronix-menu-box {
   spacing: @space-xs@;
 }
@@ -18,7 +18,7 @@
   font-weight: @weight-bold@;
 }
 
-/* Workspace pills: numbered, the active one filled with copper. */
+/* Workspace pills: numbered, the active one filled with blue. */
 #panel .panel-button.jeronix-workspaces,
 #panel .panel-button.jeronix-workspaces:hover,
 #panel .panel-button.jeronix-workspaces:focus {

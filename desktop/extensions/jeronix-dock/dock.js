@@ -19,8 +19,11 @@ import * as DND from 'resource:///org/gnome/shell/ui/dnd.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import {ControlCenter} from './control-center.js';
 import {WindowPreviews} from './previews.js';
-import {Geometry, ITEM_PADDING, fitIconSize, dropIndex} from './geometry.js';
+import {Geometry, ITEM_PADDING, TRAY_GAP, fitIconSize, dropIndex} from './geometry.js';
+import {LiveUpdates} from './live.js';
+import {MODULE_PADDING, ModuleExpander} from './modules.js';
 import {StartMenu} from './start-menu.js';
 import {TaskbarLayout} from './taskbar-layout.js';
 import {OverviewDash, Tray, TopBar} from './tray.js';
@@ -42,6 +45,7 @@ const BOUNCE_TIME = 170;
 const LABEL_DELAY = 250;
 // Where icons grow from: the screen edge the dock sits on.
 const PIVOTS = {bottom: [0.5, 1], left: [0, 0.5], right: [1, 0.5]};
+const SIDES = ['left', 'center', 'right'];
 
 function rectOf(actor) {
     const [x, y] = actor.get_transformed_position();
@@ -136,8 +140,11 @@ class Dock extends St.Widget {
         this._previewTimeout = 0;
         this._syncTimeout = 0;
 
-        // Full-width Windows 11 taskbar (bottom only) or floating dock.
-        this._taskbar = settings.get_string('style') === 'taskbar' && !this._vertical;
+        // At the bottom: three expandable modules ('modules') or a full-width
+        // Windows 11 taskbar ('taskbar'); on the sides, a floating dock.
+        const style = settings.get_string('style');
+        this._taskbar = (style === 'taskbar' || style === 'modules') && !this._vertical;
+        this._modular = this._taskbar && style === 'modules';
         this._useTray = settings.get_boolean('system-tray') && !this._vertical;
 
         this._dock = new St.BoxLayout({
@@ -153,7 +160,7 @@ class Dock extends St.Widget {
             // with the system tray at the right end (TaskbarLayout, set
             // once the tray exists).
             this._bar = new St.Widget({
-                style_class: 'jeronix-taskbar',
+                style_class: this._modular ? 'jeronix-taskbar jeronix-modules' : 'jeronix-taskbar',
                 x_expand: true,
                 y_expand: true,
             });
@@ -265,8 +272,51 @@ class Dock extends St.Widget {
             }
         }
 
-        if (this._taskbar)
-            this._bar.layout_manager = new TaskbarLayout(this._dock, this._tray ?? null, this._centered);
+        // Live updates and the widgets, in the free left end of the taskbar
+        // (where Windows 11 shows its weather and widgets).
+        if (this._taskbar && settings.get_boolean('live-updates')) {
+            try {
+                this._live = new LiveUpdates(settings, MENU_SIDE[this._position], open => {
+                    this._widgetsOpen = open;
+                    if (open) {
+                        this._hideLabel();
+                        this._previews.close();
+                    }
+                    this._sync();
+                }, this._modular ? menu => this._moduleAnchor('left', menu) : null, () => this._liveRoom());
+                this._bar.add_child(this._live.actor);
+            } catch (e) { // the taskbar works without them
+                console.warn(`JERONIX dock: live updates unavailable: ${e.message}`);
+                this._live = null;
+            }
+        }
+        if (this._taskbar) {
+            // Modules: a background behind each part, which grows into the
+            // panel opening from it (modules.js).
+            if (this._modular) {
+                this._backdrops = {};
+                for (const side of ['left', 'center', 'right']) {
+                    const backdrop = new St.Widget({style_class: `jeronix-module jeronix-module-${side}`});
+                    this._bar.insert_child_below(backdrop, null);
+                    this._backdrops[side] = backdrop;
+                }
+            }
+            this._taskbarLayout = new TaskbarLayout(this._dock, this._tray ?? null, this._centered,
+                this._live?.actor ?? null, this._backdrops ?? null, MODULE_PADDING);
+            this._bar.layout_manager = this._taskbarLayout;
+            if (this._modular) {
+                this._expander = new ModuleExpander(this._bar, this._taskbarLayout, this._backdrops,
+                    (side, open) => this._onModuleOpen(side, open));
+            }
+        }
+        // A hidden modules taskbar comes back one module at a time: the
+        // pointer at the screen edge under a module shows that module alone.
+        this._perModule = this._modular && this._behavior !== 'always';
+        this._modulesShown = new Set(SIDES);
+        // macOS-style Control Center as the content of GNOME's Quick Settings
+        // menu, wherever that menu is (the tray or the top bar). Always on:
+        // GNOME's grid is never shown while JERONIX runs.
+        this._controlCenter = new ControlCenter(settings, extensionPath);
         if (settings.get_boolean('hide-overview-dash')) {
             this._overviewDash = new OverviewDash();
             this._overviewDash.hide();
@@ -274,16 +324,41 @@ class Dock extends St.Widget {
 
         // Thin strip at the screen edge that reveals a hidden dock.
         this._edge = new St.Widget({name: 'jeronixDockEdge', reactive: true, opacity: 0});
-        this._edge.connect('enter-event', () => this._reveal());
+        this._edge.connect('enter-event', () => this._onEdge());
+        this._edge.connect('motion-event', () => this._onEdge());
+        // The pointer on the strip keeps the module above it up: leaving the
+        // strip (and not onto the bar) lets it go again.
+        this._edge.connect('leave-event', () => this._sync());
 
         this._previews = new WindowPreviews(this, MENU_SIDE[this._position]);
 
-        Main.layoutManager.addChrome(this, {
-            affectsStruts: this._behavior === 'always',
-            trackFullscreen: true,
-        });
+        Main.layoutManager.addChrome(this, {trackFullscreen: true});
         Main.layoutManager.addChrome(this._edge, {trackFullscreen: true});
-        this._startMenu = new StartMenu(MENU_SIDE[this._position], () => this._startMenuAnchor());
+        // The space the bar reserves (behavior 'always': maximized and
+        // snapped windows end above it) is held by an invisible actor at the
+        // bar's resting place, never by the bar itself: GNOME measures struts
+        // where an actor is drawn, and the bar slides away (overview, Task
+        // View, Start) by translation, which GNOME does not watch. Measured
+        // on the bar, the struts went to nothing while it was away and stayed
+        // there once it was back, so windows snapped under it.
+        if (this._behavior === 'always') {
+            this._strut = new St.Widget({name: 'jeronixDockStrut', reactive: false, opacity: 0});
+            Main.layoutManager.addChrome(this._strut, {affectsStruts: true, trackFullscreen: true});
+        }
+        this._startMenu = new StartMenu(MENU_SIDE[this._position], () => this._startMenuAnchor(), settings);
+        // Each panel opens as its module expanding: the widgets from the
+        // left, Start from the center, the Control Center (status icons)
+        // and the notification center (clock) from the right.
+        if (this._expander) {
+            if (this._live)
+                this._expander.attach('left', this._live.panel.menu);
+            this._expander.attach('center', this._startMenu.menu);
+            for (const role of this._trayItems?.roles ?? []) {
+                const indicator = Main.panel.statusArea[role];
+                if (indicator?.menu)
+                    this._expander.attach('right', indicator.menu, indicator);
+            }
+        }
         this._startMenu.menu.connect('open-state-changed', (m, open) => {
             this._menuOpen = open;
             if (open) {
@@ -301,17 +376,36 @@ class Dock extends St.Widget {
         });
 
         this.connect('notify::hover', () => {
+            // Destroying the dock under the pointer ends its hover; the label
+            // is already gone by then.
+            if (this._destroyed)
+                return;
             if (!this.hover) {
                 this._magnify(null);
                 this._hideLabel();
             }
             this._sync();
         });
+        // Modules: moving from one module to another (or off them, inside
+        // the bar) changes which module the pointer keeps up.
+        this.connect('captured-event', (actor, event) => {
+            if (this._perModule && event.type() === Clutter.EventType.MOTION) {
+                const side = this._pointerModule();
+                if (side !== this._lastPointerModule) {
+                    this._lastPointerModule = side;
+                    this._sync();
+                }
+            }
+            return Clutter.EVENT_PROPAGATE;
+        });
         this._dock.connect('notify::allocation', () => this._queuePlace());
         // When the shell exits it destroys the dock directly, without
         // disable(): drop pending work so nothing touches disposed actors.
         this.connect('destroy', () => {
             this._destroyed = true;
+            // GNOME's menus outlive the taskbar: never leave them pointing at it.
+            this._expander?.destroy();
+            this._expander = null;
             if (this._placeLater)
                 global.compositor.get_laters().remove(this._placeLater);
             this._placeLater = 0;
@@ -452,7 +546,35 @@ class Dock extends St.Widget {
     // Where the Start menu opens: centered on the screen above a centered
     // bottom bar (Windows 11), above the Start button on a left-aligned bar,
     // and beside the dock on the sides.
+    /**
+     * Where a module's panel opens (the panel is centered on this point):
+     * on top of the module as it will be expanded, flush with its left edge
+     * for the left module, centered over the center one.
+     */
+    // The widest the live updates may grow to (expanded): beside a centered
+    // app group they have the free space left of it (TaskbarLayout shows
+    // them only where they fit whole).
+    _liveRoom() {
+        const center = this._taskbarLayout?.rects.center;
+        if (!center || !this._centered)
+            return Infinity;
+        return center[0] - TRAY_GAP - 2 * (this._modular ? MODULE_PADDING : 0);
+    }
+
+    _moduleAnchor(side, menu) {
+        const target = this._expander?.anchorFor(side, menu);
+        if (!target)
+            return null;
+        const x = side === 'left' ? target.x + target.panelWidth / 2 : target.x + target.width / 2;
+        return {x, y: target.y, width: 1, height: 1};
+    }
+
     _startMenuAnchor() {
+        if (this._modular) {
+            const anchor = this._moduleAnchor('center', this._startMenu.menu);
+            if (anchor)
+                return anchor;
+        }
         const monitor = Main.layoutManager.primaryMonitor;
         const rect = this._rect ?? {x: monitor.x, y: monitor.y + monitor.height, width: monitor.width, height: 0};
         if (this._position === 'bottom') {
@@ -549,7 +671,7 @@ class Dock extends St.Widget {
         this._hideLabel();
         this._labelTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, LABEL_DELAY, () => {
             this._labelTimeout = 0;
-            if (!actor.hover || this._previews.isOpen || this._menuOpen)
+            if (!actor.hover || this._previews.isOpen || this._menuOpen || this._widgetsOpen)
                 return GLib.SOURCE_REMOVE;
             this._label.text = text;
             this._label.show();
@@ -604,11 +726,18 @@ class Dock extends St.Widget {
         if (!same) {
             this.set_position(rect.x, rect.y);
             this.set_size(rect.width, rect.height);
+            this._strut?.set_position(rect.x, rect.y);
+            this._strut?.set_size(rect.width, rect.height);
             const edge = this._geometry.edgeStrip(rect);
             this._edge.set_position(edge.x, edge.y);
             this._edge.set_size(edge.width, edge.height);
             this._hiddenOffset = this._geometry.hiddenOffset(rect);
-            if (!this._shown) {
+            if (this._perModule) {
+                for (const side of SIDES.filter(s => !this._modulesShown.has(s))) {
+                    for (const actor of this._moduleActors(side))
+                        actor.translation_y = this._hiddenOffset.y;
+                }
+            } else if (!this._shown) {
                 this.translation_x = this._hiddenOffset.x;
                 this.translation_y = this._hiddenOffset.y;
             }
@@ -669,9 +798,11 @@ class Dock extends St.Widget {
     }
 
     wantsVisible() {
+        if (this._perModule)
+            return this._wantedModules().size > 0;
         if (Main.overview.visible || Main.overview.animationInProgress)
             return false;
-        if (this._behavior === 'always' || this.hover || this._menuOpen || this._previews.isOpen ||
+        if (this._behavior === 'always' || this.hover || this._menuOpen || this._widgetsOpen || this._previews.isOpen ||
             this._keyboardInside() || this._dragging)
             return true;
         if (this._behavior === 'intellihide')
@@ -682,6 +813,15 @@ class Dock extends St.Widget {
     _sync() {
         if (this._destroyed)
             return;
+        // The overview may still report its animation when it says it is
+        // hidden (or when the dock is created at login): look again once it
+        // has settled, or the dock could stay hidden until something moves.
+        if (Main.overview.animationInProgress)
+            this._queueSync();
+        if (this._perModule) {
+            this._syncModules();
+            return;
+        }
         if (this.wantsVisible()) {
             this._clearHideTimeout();
             this._show();
@@ -715,7 +855,12 @@ class Dock extends St.Widget {
         return St.Settings.get().enable_animations ? SHOW_TIME : 0;
     }
 
-    _show() {
+    // Shows the dock; of a modules taskbar, the module on side.
+    _show(side = 'center') {
+        if (this._perModule) {
+            this._showModules([side]);
+            return;
+        }
         this.visible = true;
         this._edge.visible = false;
         if (this._shown)
@@ -732,6 +877,11 @@ class Dock extends St.Widget {
     }
 
     _hide(immediate) {
+        if (this._perModule) {
+            this._clearHideTimeout();
+            this._hideModules(SIDES, immediate);
+            return;
+        }
         this._clearHideTimeout();
         this._previews.close();
         this._edge.visible = !Main.overview.visible;
@@ -750,6 +900,174 @@ class Dock extends St.Widget {
                     this.visible = false;
             },
         });
+    }
+
+    // -- modules: one at a time ---------------------------------------------
+    //
+    // A hidden modules taskbar is three hidden modules. Each comes back on
+    // its own: the pointer at the screen edge shows the module above it
+    // (the nearest one, from a gap or a corner), and only that module; it
+    // stays up while the pointer is on it or a panel, the previews or the
+    // keyboard is in it. The others stay down. The container stays where
+    // it is; each module (its background and content) slides by itself.
+
+    _moduleActors(side) {
+        const content = {left: this._live?.actor, center: this._dock, right: this._tray}[side];
+        return [this._backdrops[side], content].filter(Boolean);
+    }
+
+    /** The module nearest to stage x (present modules only), or null. */
+    _moduleAt(x) {
+        const [bx] = this._bar.get_transformed_position();
+        let best = null, bestDistance = Infinity;
+        for (const side of SIDES) {
+            const box = this._backdrops[side].get_allocation_box();
+            if (box.get_width() < 1)
+                continue;
+            const x1 = bx + box.x1, x2 = bx + box.x2;
+            const distance = x < x1 ? x1 - x : x > x2 ? x - x2 : 0;
+            if (distance < bestDistance) {
+                best = side;
+                bestDistance = distance;
+            }
+        }
+        return best;
+    }
+
+    /** The module under the pointer, if the pointer is in the bar. */
+    _pointerModule() {
+        const [x, y] = global.get_pointer();
+        const r = this._rect;
+        if (!r || x < r.x || x >= r.x + r.width || y < r.y || y >= r.y + r.height)
+            return null;
+        return this._moduleAt(x);
+    }
+
+    _wantedModules() {
+        const wanted = new Set();
+        if (Main.overview.visible || Main.overview.animationInProgress)
+            return wanted;
+        if (this._behavior === 'intellihide' && !this._overlapsWindow())
+            return new Set(SIDES);
+        // A module down comes back from the edge only (_onEdge), never by
+        // passing over where it would be.
+        const hovered = this._pointerModule();
+        if (hovered && this._modulesShown.has(hovered))
+            wanted.add(hovered);
+        if (this._menuOpen || this._previews.isOpen || this._keyboardInside() || this._dragging)
+            wanted.add('center');
+        if (this._widgetsOpen)
+            wanted.add('left');
+        for (const side of SIDES) {
+            if (this._expander.isOpen(side))
+                wanted.add(side);
+        }
+        return wanted;
+    }
+
+    _syncModules() {
+        if (Main.overview.visible) {
+            this._hide(true);
+            return;
+        }
+        const wanted = this._wantedModules();
+        this._showModules([...wanted]);
+        const leaving = [...this._modulesShown].filter(s => !wanted.has(s));
+        if (leaving.length === 0) {
+            this._clearHideTimeout();
+            this._syncEdge();
+            return;
+        }
+        if (this._hideTimeout)
+            return;
+        this._hideTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, HIDE_DELAY, () => {
+            this._hideTimeout = 0;
+            const now = this._wantedModules();
+            this._hideModules([...this._modulesShown].filter(s => !now.has(s)), false);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _onEdge() {
+        if (!this._perModule) {
+            this._reveal();
+            return;
+        }
+        if (Main.overview.visible)
+            return;
+        const side = this._moduleAt(global.get_pointer()[0]);
+        if (side && !this._modulesShown.has(side)) {
+            this._showModules([side]);
+            this._sync(); // schedules the hide again unless the pointer stays
+        }
+    }
+
+    // A panel opening from a hidden module (a shortcut): GNOME places its
+    // menus by their buttons, so the module is up before the panel is placed.
+    _onModuleOpen(side, open) {
+        if (this._destroyed)
+            return;
+        if (open && this._perModule)
+            this._showModules([side], true);
+        this._sync();
+    }
+
+    _showModules(sides, immediate = false) {
+        for (const side of sides) {
+            if (this._modulesShown.has(side))
+                continue;
+            this._modulesShown.add(side);
+            for (const actor of this._moduleActors(side)) {
+                if (immediate) {
+                    actor.remove_transition('translation-y');
+                    actor.remove_transition('opacity');
+                    actor.translation_y = 0;
+                    actor.opacity = 255;
+                } else {
+                    actor.ease({translation_y: 0, opacity: 255, duration: this._animationTime(),
+                        mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+                }
+            }
+        }
+        if (this._modulesShown.size > 0) {
+            this.visible = true;
+            this.reactive = true;
+            this._shown = true;
+        }
+        this._syncEdge();
+    }
+
+    _hideModules(sides, immediate) {
+        for (const side of sides) {
+            if (!this._modulesShown.has(side))
+                continue;
+            this._modulesShown.delete(side);
+            if (side === 'center')
+                this._previews.close();
+            for (const actor of this._moduleActors(side)) {
+                actor.ease({
+                    translation_y: this._hiddenOffset?.y ?? 0,
+                    opacity: 0,
+                    duration: immediate ? 0 : this._animationTime(),
+                    mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    onComplete: () => {
+                        if (!this._destroyed && this._modulesShown.size === 0)
+                            this.visible = false;
+                    },
+                });
+            }
+        }
+        if (this._modulesShown.size === 0) {
+            this._shown = false;
+            this.reactive = false;
+        }
+        this._syncEdge();
+    }
+
+    /** The edge strip is there while a module is down. */
+    _syncEdge() {
+        this._edge.visible = !Main.overview.visible &&
+            SIDES.some(s => this._taskbarLayout.rects[s] && !this._modulesShown.has(s));
     }
 
     // -- previews ---------------------------------------------------------
@@ -818,7 +1136,13 @@ class Dock extends St.Widget {
         this._destroyed = true;
         // Give GNOME's tray components back to the top bar first: they
         // must not be destroyed with the taskbar.
+        // Detach the panels (GNOME's keep working) before their owners go.
+        this._expander?.destroy();
+        this._expander = null;
+        this._live?.destroy();
+        this._live = null;
         this._startMenu?.destroy();
+        this._controlCenter?.destroy();
         this._trayItems?.restore();
         this._topBar?.restore();
         this._overviewDash?.restore();
@@ -840,6 +1164,11 @@ class Dock extends St.Widget {
         this._label.destroy();
         Main.layoutManager.removeChrome(this._edge);
         this._edge.destroy();
+        if (this._strut) {
+            Main.layoutManager.removeChrome(this._strut);
+            this._strut.destroy();
+            this._strut = null;
+        }
         Main.layoutManager.removeChrome(this);
         super.destroy();
     }
@@ -851,6 +1180,7 @@ class Dock extends St.Widget {
             behavior: this._behavior,
             shown: this._shown,
             visible: this.visible,
+            modulesShown: this._perModule ? SIDES.filter(s => this._modulesShown.has(s)) : null,
             iconSize: this._iconSize,
             items: this._box.get_children().map(c => c.app.get_id()),
             itemRects: this._box.get_children().map(c => {
@@ -864,7 +1194,13 @@ class Dock extends St.Widget {
             magnification: Object.fromEntries(this._box.get_children().map(c =>
                 [c.app.get_id(), Math.round(c.magnification * 100) / 100])),
             label: this._label.visible ? this._label.text : null,
-            style: this._taskbar ? 'taskbar' : 'floating',
+            style: this._modular ? 'modules' : this._taskbar ? 'taskbar' : 'floating',
+            modules: this._expander ? {
+                ...this._expander.state,
+                rects: Object.fromEntries(Object.entries(this._backdrops).map(([side, b]) => [side, rectOf(b)])),
+                classes: Object.fromEntries(Object.entries(this._backdrops).map(([side, b]) =>
+                    [side, b.get_style_class_name()])),
+            } : null,
             groupRect: rectOf(this._dock),
             trayRect: this._tray ? rectOf(this._tray) : null,
             searchRect: rectOf(this._searchButton),
@@ -878,6 +1214,9 @@ class Dock extends St.Widget {
             startMenuApps: this._startMenu.isOpen ? this._startMenu.visibleApps().map(a => a.get_id()) : [],
             startMenu: this._startMenu.debugState(),
             overviewDashHidden: this._overviewDash?.hidden ?? false,
+            controlCenter: this._controlCenter?.debugState() ?? null,
+            live: this._live ? {...this._live.debugState(), rect: rectOf(this._live.actor),
+                placed: Boolean(this._bar?.layout_manager?.livePlaced)} : null,
             favorites: favorites.map(a => a.get_id()),
             running: running.map(a => a.get_id()),
             rect: this._rect ? [this._rect.x, this._rect.y, this._rect.width, this._rect.height] : null,

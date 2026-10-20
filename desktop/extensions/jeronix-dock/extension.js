@@ -18,15 +18,33 @@ import {Dock} from './dock.js';
 
 // GNOME's own modes for the Super key (js/ui/main.js).
 const OVERLAY_MODES = Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW;
+// Keys the Start menu and the Control Center follow themselves; rebuilding
+// the dock for them would close the menu they are changed from (the widgets
+// panel follows its list itself).
+const LIVE_KEYS = new Set(['start-pinned-apps', 'start-hidden-apps', 'control-center-modules',
+    'control-center-reduce-transparency', 'live-widgets', 'live-activities', 'live-colors', 'live-expand']);
 
 export default class JeronixDockExtension extends Extension {
     enable() {
         if (this._settings) // repeated enable() from overlapping passes: no-op
             return;
         this._settings = this.getSettings();
+        this._shuttingDown = false;
+        // While the shell shuts down (log out), GNOME disposes its menus and
+        // layout: a rebuild still queued then would tear the taskbar down
+        // over objects already gone. Nothing is rebuilt from then on.
+        global.connectObject('shutdown', () => {
+            this._shuttingDown = true;
+            if (this._rebuildId)
+                GLib.source_remove(this._rebuildId);
+            this._rebuildId = 0;
+        }, this);
         // A layout changes several keys at once; rebuild once, after the
         // burst, instead of once per key.
-        this._settings.connectObject('changed', () => this._queueRebuild(), this);
+        this._settings.connectObject('changed', (settings, key) => {
+            if (!LIVE_KEYS.has(key))
+                this._queueRebuild();
+        }, this);
         this._dock = new Dock(this._settings, this.path);
         Main.wm.addKeybinding('start-menu-shortcut', this._settings, Meta.KeyBindingFlags.NONE,
             Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
@@ -70,7 +88,7 @@ export default class JeronixDockExtension extends Extension {
     }
 
     _queueRebuild() {
-        if (this._rebuildId)
+        if (this._rebuildId || this._shuttingDown)
             return;
         this._rebuildId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this._rebuildId = 0;
@@ -81,12 +99,18 @@ export default class JeronixDockExtension extends Extension {
     }
 
     disable() {
+        // Like enable(), disable() can be called twice by overlapping
+        // passes (seen when another extension is switched off); the
+        // second call must not touch what the first one released.
+        if (!this._settings)
+            return;
         if (this._rebuildId) {
             GLib.source_remove(this._rebuildId);
             this._rebuildId = 0;
         }
         this._releaseSuperKey();
         Main.wm.removeKeybinding('start-menu-shortcut');
+        global.disconnectObject(this);
         this._settings.disconnectObject(this);
         this._dock?.destroy();
         this._dock = null;

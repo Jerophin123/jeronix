@@ -49,7 +49,7 @@ ALLOWED = {
     "org.gnome.desktop.interface": {
         "color-scheme", "accent-color", "enable-hot-corners", "clock-show-weekday",
         "clock-show-seconds", "clock-format", "show-battery-percentage", "enable-animations", "icon-theme",
-        "gtk-theme", "font-name", "document-font-name",
+        "gtk-theme", "font-name", "document-font-name", "monospace-font-name", "cursor-theme",
     },
     "org.gnome.desktop.sound": {"theme-name"},
     "org.gnome.desktop.wm.preferences": {"button-layout", "focus-mode", "action-double-click-titlebar",
@@ -71,7 +71,7 @@ ALLOWED = {
     "org.gnome.shell.extensions.jeronix-dock": {
         "position", "behavior", "icon-size", "show-running", "show-apps-button", "show-previews",
         "show-start-button", "show-search-button", "magnify", "style", "alignment", "system-tray",
-        "hide-top-bar", "show-task-view-button",
+        "hide-top-bar", "show-task-view-button", "super-key-start-menu", "hide-overview-dash", "live-updates",
     },
     "org.gnome.shell.extensions.jeronix-panel": {
         "show-menu-label", "show-workspaces", "show-window-context", "hide-activities",

@@ -49,7 +49,11 @@ def extension_settings(uuid, schema_id):
     return None
 
 
-def open_gnome_settings(panel=None):
-    """Opens GNOME Settings, optionally on a panel (e.g. 'display')."""
-    argv = ["gnome-control-center"] + ([panel] if panel else [])
-    Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE)
+def desktop_app_info(desktop_id):
+    """Gio.DesktopAppInfo for an installed app, or None. PyGObject raises
+    TypeError instead of returning None when the app does not exist."""
+    try:
+        return Gio.DesktopAppInfo.new(desktop_id)
+    except TypeError:
+        return None
+

@@ -7,8 +7,8 @@ Quick Settings, accessibility and status indicators are unchanged.
 
 | Element | Behavior |
 | --- | --- |
-| **JERONIX menu** (copper J symbol and wordmark) | Replaces Activities. Items: Search Applications (JERONIX Launcher), Overview, All Applications, Layout Studio, JERONIX Settings, System Information, Welcome Tour, GNOME Settings, Lock Screen, Log Out, Power Off. Lock, log-out and power items use GNOME's `SystemActions` and are hidden when not permitted |
-| **Workspaces** | Numbered pills, with the active one in copper. Click a pill to switch; scroll to step through workspaces |
+| **JERONIX menu** (blue J symbol and wordmark) | Replaces Activities. Items: Search Applications (JERONIX Launcher), Overview, All Applications, Layout Studio, JERONIX Settings, System Information, Welcome Tour, Lock Screen, Log Out, Power Off. Lock, log-out and power items use GNOME's `SystemActions` and are hidden when not permitted |
+| **Workspaces** | Numbered pills, with the active one in blue. Click a pill to switch; scroll to step through workspaces |
 | **Focused application** | Icon and name of the focused app. Click it for GNOME's app menu: its windows, new window, pin and quit |
 
 The overview remains reachable from the menu, the Super key (unless the

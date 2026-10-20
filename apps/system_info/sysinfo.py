@@ -45,13 +45,13 @@ class InfoWindow(Adw.ApplicationWindow):
         self._sync_logo()
         self.style_manager.connect("notify::dark", lambda *_: self._sync_logo())
         hero.add(self.logo)
-        tagline = Gtk.Label(label="A handcrafted desktop on the Ubuntu foundation", margin_bottom=12)
+        tagline = Gtk.Label(label="A handcrafted desktop, shaped around your work", margin_bottom=12)
         tagline.add_css_class("jeronix-subtitle")
         hero.add(tagline)
         page.add(hero)
 
         system = Adw.PreferencesGroup(title="System")
-        for key in ("JERONIX", "Base system", "Kernel", "Architecture", "GNOME Shell", "Session"):
+        for key in ("JERONIX", "Operating system", "Kernel", "Architecture", "GNOME Shell", "Session"):
             system.add(self._row(key, self.info[key]))
         for key, value in self.toolkit.items():
             system.add(self._row(key, value))

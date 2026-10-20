@@ -187,10 +187,15 @@ class Inner:
         self.shell_ext("EnableExtension", PROBE_UUID)
         self.wait_for("test probe", lambda: self.has_name("org.jeronix.Test.Probe"))
 
+    def accent(self):
+        bg, fg = self.probe("AccentColor")[0].split()
+        return {"accent": bg, "accent-fg": fg}
+
     def compare_with_tokens(self, variant):
         mismatches = []
+        live = self.accent()
         for c in design.theme_checks(self.tokens, variant):
-            expected = c["expect"].lower() + "ff"
+            expected = live[c["follows"]] if "follows" in c else c["expect"].lower() + "ff"
             actual = self.style(c["chain"], c["property"])
             if actual != expected:
                 mismatches.append(f"{c['what']}: {c['property']} is {actual or 'unset'}, token {expected}")
@@ -222,6 +227,17 @@ class Inner:
 
         self.probe("SetColorScheme", ("prefer-dark",), "(s)")
         self.wait_for("dark stylesheet again", lambda: self.our_stylesheets() == ["stylesheet-dark.css"])
+
+        # The accent chosen in Settings applies at once, without a restart.
+        toggle = [{"style": "quick-toggle button", "pseudo": "checked"}]
+        before = self.style(toggle, "background-color")
+        for accent in ("teal", "blue"):
+            self.probe("SetSetting", ("org.gnome.desktop.interface", "accent-color", f"'{accent}'"), "(sss)")
+            now = self.wait_for(f"{accent} accent", lambda: (c := self.style(toggle, "background-color")) != before and c)
+            self.check(f"choosing {accent} recolors the shell live ({before} -> {now})", now == self.accent()["accent"])
+            self.compare_with_tokens("dark")
+            before = now
+
         self.shell_ext("DisableExtension", UUID)
         self.wait_for("extension inactive", lambda: self.ext_state(UUID)[0] == STATE_INACTIVE)
         self.check("disable unloads every JERONIX stylesheet", self.our_stylesheets() == [])
@@ -229,7 +245,8 @@ class Inner:
                    self.style(panel, "background-color") == baseline)
 
         log = (self.tmp / "shell.log").read_text(errors="replace")
-        bad = [line for line in log.splitlines() if UUID in line]
+        # (GNOME noting that this copy shadows one in /usr/share is not an error.)
+        bad = [line for line in log.splitlines() if UUID in line and "will not be loaded" not in line]
         for line in bad:
             print(f"  log: {line}")
         self.check("no CSS or JS errors mention the theme in the shell log", not bad)

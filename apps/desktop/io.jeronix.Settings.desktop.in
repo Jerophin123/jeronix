@@ -1,11 +1,11 @@
 [Desktop Entry]
 Type=Application
 Name=JERONIX Settings
-GenericName=Desktop Settings
-Comment=Appearance, top bar, dock and shortcuts of the JERONIX desktop
+GenericName=Settings
+Comment=Wi-Fi, Bluetooth, sound, appearance, Start menu, Control Center and the rest of the system
 Exec=@PYTHON@ @APPS@/settings/settings.py
 Icon=io.jeronix.Settings
 Categories=GTK;Settings;DesktopSettings;
-Keywords=jeronix;theme;dock;panel;appearance;
+Keywords=jeronix;settings;preferences;wifi;bluetooth;sound;display;theme;dock;taskbar;start;wallpaper;
 StartupNotify=true
 X-GNOME-UsesNotifications=false

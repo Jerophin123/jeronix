@@ -18,12 +18,23 @@ icon shows that it is active.
 - The state is deliberately not remembered across sessions, so a forgotten
   toggle can't keep a laptop awake forever.
 
+**Brightness for JERONIX Settings.** GNOME Shell owns screen brightness
+(backlights, dimming, auto brightness) and has no D-Bus method to set it.
+`brightness-service.js` follows the shell's brightness manager the way
+GNOME's own slider does, and publishes it on the shell's bus name
+`org.gnome.Shell` at `/io/jeronix/Shell/Brightness`
+(`io.jeronix.Shell.Brightness`: `Available` b, `Brightness` d, 0..1,
+read/write). Changes from anywhere (keys, Quick Settings, the Control
+Center) are announced with `PropertiesChanged`, so the Settings slider
+follows them live.
+
 ## Files
 
 | File | Purpose |
 | --- | --- |
 | `extension.js` | Shell UI: toggle, panel indicator, enable/disable |
 | `inhibitor.js` | Inhibit/uninhibit state machine (no Shell imports, unit-tested) |
+| `brightness-service.js` | Screen brightness over D-Bus for JERONIX Settings |
 | `metadata.json` | Manifest |
 
 ## Tests

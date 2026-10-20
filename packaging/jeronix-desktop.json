@@ -1,7 +1,14 @@
 {
   "package": "jeronix-desktop",
-  "version": "0.1.0",
-  "summary": "JERONIX desktop layer for Ubuntu (theme, Stay Awake, wallpapers, Pure layout)",
-  "description": "Adds the JERONIX GNOME Shell theme, the Stay Awake Quick Settings toggle,\nJERONIX wallpapers and icons, and the Pure layout as system-wide GSettings\ndefaults (a dconf system database). Users can change or reset every setting.",
-  "depends": ["gnome-shell (>= 50)", "gnome-shell (<< 51)", "dconf-gsettings-backend", "python3", "python3-gi"]
+  "version": "0.2.0",
+  "summary": "JERONIX desktop: look, apps, login screen, boot splash and terminal",
+  "description": "The JERONIX desktop: the GNOME Shell theme and extensions (taskbar, Start menu,\nControl Center), JERONIX apps and Settings, wallpapers and icons, the JERONIX login\nscreen and boot splash, the terminal look, and the Pure layout as system-wide\nGSettings defaults. Users can change or reset every setting; removing the package\nputs the replaced system files back.",
+  "depends": [
+    "gnome-shell (>= 50)",
+    "gnome-shell (<< 51)",
+    "dconf-gsettings-backend",
+    "python3",
+    "python3-gi",
+    "libgio-2.0-dev-bin"
+  ]
 }

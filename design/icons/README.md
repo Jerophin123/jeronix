@@ -9,8 +9,8 @@ everywhere. The wordmark letters are drawn strokes rather than text.
 
 A drawn **J**: a vertical stem that curves into an open bowl and hooks back
 upward, with an offset **seed** dot standing in for the crossbar. Since v0.3
-the J is copper, the seed is light sage, and the tile is graphite. The
-on-light variants use deep copper and moss.
+the J is blue, the seed is light sage, and the tile is graphite. The
+on-light variants use deep blue and moss.
 
 v0.2 (Milestone 4) refined the v0.1 draft:
 
@@ -81,8 +81,8 @@ grid, a 7 px stroke with round caps and joins, and token colors only.
 
 | Context | Style | Icons |
 | --- | --- | --- |
-| Apps | Graphite tile (the logo's), ivory glyph, copper and sage accents | The five JERONIX apps; Files, Settings, Terminal (Ptyxis), Text Editor, Calculator, System Monitor, Image Viewer, plus their generic names (`utilities-terminal`, `system-file-manager`, ...) |
-| Places | Copper folder with an ivory emblem | folder, Documents, Downloads, Music, Pictures, Videos, Templates, Public, Home, Desktop, Trash (empty and full) |
+| Apps | Graphite tile (the logo's), ivory glyph, blue and sage accents | The five JERONIX apps; Files, Settings, Terminal (Ptyxis), Text Editor, Calculator, System Monitor, Image Viewer, plus their generic names (`utilities-terminal`, `system-file-manager`, ...) |
+| Places | Blue folder with an ivory emblem | folder, Documents, Downloads, Music, Pictures, Videos, Templates, Public, Home, Desktop, Trash (empty and full) |
 | Mimetypes | Paper page with a folded corner and a type glyph | text, document, spreadsheet, presentation, image, audio, video, archive, PDF, script/source, program, plus common aliases |
 
 The theme inherits **Yaru, Adwaita, hicolor**, so anything JERONIX does not

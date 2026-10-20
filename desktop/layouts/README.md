@@ -30,7 +30,9 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 
 | | Pure | Classic | Studio |
 | --- | --- | --- | --- |
-| Bar | Windows 11 taskbar: full width, Start, Search, Task View and apps **centered**, always visible | Same taskbar with Start and apps **left-aligned** | Floating dock on the right edge, autohide |
+| Bar | Three floating **modules**: live updates and widgets, then Start, Search, Task View and apps **centered**, then the tray; always visible, windows snap and maximize above them | One full-width taskbar, Start and apps **left-aligned**, always visible | Floating dock on the right edge, autohide |
+| Super key | opens Start | opens Start | opens the overview (workspaces) |
+| Live updates and widgets | on (left module) | on (after the apps) | off |
 | Tray | Quick Settings, notifications and clock in the taskbar | Same | In GNOME's top bar |
 | Top bar | hidden (one bar) | hidden (one bar) | menu symbol, numbered workspaces, focused app |
 | Workspaces | dynamic, via Task View or Super | dynamic | 4 fixed, Super+1…4 / Super+Shift+1…4, on all monitors |
@@ -50,18 +52,19 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | `org.gnome.desktop.interface` | `font-name` | `Noto Sans 11` |
 | `org.gnome.desktop.interface` | `document-font-name` | `Noto Sans 11` |
 | `org.gnome.desktop.interface` | `color-scheme` | `prefer-dark` |
-| `org.gnome.desktop.interface` | `accent-color` | `slate` (Ubuntu shows it as Yaru sage) |
+| `org.gnome.desktop.interface` | `accent-color` | `blue` (the JERONIX accent) |
+| `org.gnome.desktop.interface` | `monospace-font-name` | `Noto Sans Mono 11` |
+| `org.gnome.desktop.interface` | `cursor-theme` | `Adwaita` |
 | `org.gnome.desktop.interface` | `enable-hot-corners` | `true` |
 | `org.gnome.desktop.interface` | `clock-show-weekday` | `true` |
-| `org.gnome.desktop.wm.preferences` | `button-layout` | `appmenu:close` |
-| `org.gnome.mutter` | `overlay-key` | `Super` |
+| `org.gnome.desktop.wm.preferences` | `button-layout` | `appmenu:minimize,maximize,close` |
+| `org.gnome.mutter` | `overlay-key` | `Super` (the Start key, with `super-key-start-menu`) |
 | `org.gnome.mutter` | `dynamic-workspaces` | `true` |
 | `org.gnome.mutter` | `workspaces-only-on-primary` | `true` |
-| `org.gnome.mutter` | `edge-tiling` | `true` |
 | `org.gnome.desktop.background` | `picture-uri` | JERONIX light wallpaper |
 | `org.gnome.desktop.background` | `picture-uri-dark` | JERONIX dark wallpaper |
 | `org.gnome.desktop.background` | `picture-options` | `zoom` |
-| `org.gnome.desktop.background` | `primary-color` | `#1E1D1B` |
+| `org.gnome.desktop.background` | `primary-color` | `#1C2230` |
 | `org.gnome.desktop.screensaver` | `picture-uri` | JERONIX dark wallpaper |
 | `org.gnome.shell.extensions.jeronix-panel` | `show-menu-label` | `true` |
 | `org.gnome.shell.extensions.jeronix-panel` | `show-workspaces` | `false` |
@@ -72,10 +75,16 @@ lists. `restore` refuses a snapshot that would switch any extension outside
 | `org.gnome.shell.extensions.jeronix-dock` | `icon-size` | `32` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-running` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-previews` | `true` |
-| `org.gnome.shell.extensions.jeronix-dock` | `style` | `taskbar` |
+| `org.gnome.shell.extensions.jeronix-dock` | `style` | `modules` |
 | `org.gnome.shell.extensions.jeronix-dock` | `alignment` | `center` |
 | `org.gnome.shell.extensions.jeronix-dock` | `system-tray` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `hide-top-bar` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-task-view-button` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-start-button` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `show-search-button` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `super-key-start-menu` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `hide-overview-dash` | `true` |
+| `org.gnome.shell.extensions.jeronix-dock` | `live-updates` | `true` |
 | `org.gnome.shell.extensions.jeronix-dock` | `show-task-view-button` | `true` |
 
 Classic and Studio list their settings, each with a reason, in

@@ -48,13 +48,18 @@ class Sandbox:
     def __init__(self, extensions_dir):
         self._tmp = tempfile.TemporaryDirectory()
         self.root = Path(self._tmp.name)
-        for sub in ("home", "data", "state", "config/glib-2.0/settings"):
+        for sub in ("home", "data", "system", "state", "config/glib-2.0/settings"):
             (self.root / sub).mkdir(parents=True)
+        # The system data directories are the sandbox's own too: a JERONIX
+        # installed in /usr/share (a system with the package) must not count
+        # as installed here. GSettings still finds the system's schemas.
         self.env = {
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "LANG": "C.UTF-8",
             "HOME": str(self.root / "home"),
             "XDG_DATA_HOME": str(self.root / "data"),
+            "XDG_DATA_DIRS": str(self.root / "system"),
+            "GSETTINGS_SCHEMA_DIR": "/usr/share/glib-2.0/schemas",
             "XDG_STATE_HOME": str(self.root / "state"),
             "XDG_CONFIG_HOME": str(self.root / "config"),
             "GSETTINGS_BACKEND": "keyfile",
@@ -122,11 +127,14 @@ class LayoutStructureTests(unittest.TestCase):
         styles = {name: dock(l, "style") for name, l in self.layouts.items()}
         alignments = {name: dock(l, "alignment") for name, l in self.layouts.items() if name != "studio"}
         self.assertEqual(positions, {"pure": "bottom", "classic": "bottom", "studio": "right"})
-        self.assertEqual(styles, {"pure": "taskbar", "classic": "taskbar", "studio": "floating"})
+        self.assertEqual(styles, {"pure": "modules", "classic": "taskbar", "studio": "floating"})
         self.assertEqual(alignments, {"pure": "center", "classic": "start"})
         self.assertEqual(behaviors["studio"], "autohide", behaviors)
-        self.assertEqual(behaviors["pure"], "always", "Windows 11-style taskbar stays visible")
+        self.assertEqual(behaviors["pure"], "always", "snapped and maximized windows fit above the taskbar")
         keys = {name: {(s["schema"], s["key"]) for s in l["settings"]} for name, l in self.layouts.items()}
+        for name in self.layouts:
+            self.assertNotIn(("org.gnome.mutter", "edge-tiling"), keys[name],
+                             f"{name}: window snapping belongs to GNOME or Tiling Assistant, never both")
         self.assertIn(("org.gnome.desktop.wm.preferences", "num-workspaces"), keys["studio"])
         self.assertNotIn(("org.gnome.desktop.wm.preferences", "num-workspaces"), keys["pure"])
 

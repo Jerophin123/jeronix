@@ -102,7 +102,7 @@
 }
 
 /* Running indicator, Windows 11 style: a short neutral pill for running
- * apps that widens into copper for the focused one. */
+ * apps that widens into blue for the focused one. */
 .jeronix-dock .app-grid-running-dot {
   background-color: @text-muted@;
   width: 6px;
@@ -427,4 +427,719 @@
 
 .jeronix-start-action StIcon {
   icon-size: 16px;
+}
+
+/* App context menu (right-click in Start): drawn inside the Start menu. */
+.jeronix-start-context {
+  background-color: @surface-raised@;
+  border: @border-width@ solid @border@;
+  border-radius: @radius-medium@;
+  padding: @space-xxs@;
+  min-width: 190px;
+  box-shadow: @shadow-overlay@;
+}
+
+.jeronix-start-context-item {
+  color: @text@;
+  font-size: @font-caption@;
+  border-radius: @radius-small@;
+  padding: @space-xs@ @space-sm@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-start-context-item:hover {
+  background-color: @hover@;
+}
+
+.jeronix-start-context-item:focus {
+  background-color: @hover@;
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+/* ---- Control Center (macOS style) ------------------------------------------
+ * The content of GNOME's Quick Settings menu: rounded modules on a
+ * translucent panel, round toggles that fill with the accent when on. */
+.jeronix-cc-menu .quick-settings {
+  padding: 10px;
+}
+
+.jeronix-cc-menu .popup-menu-content {
+  background-color: @dock-surface@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-large@;
+}
+
+/* Reduce transparency (control-center-reduce-transparency). */
+.jeronix-cc-menu.jeronix-cc-solid .popup-menu-content {
+  background-color: @surface-raised@;
+}
+
+.jeronix-cc {
+  width: 360px;
+  spacing: 10px;
+}
+
+.jeronix-cc-module {
+  background-color: @surface-overlay@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-medium@;
+  padding: 10px;
+  spacing: @space-xs@;
+  color: @text@;
+}
+
+.jeronix-cc-row {
+  spacing: @space-xs@;
+  min-height: 32px;
+}
+
+.jeronix-cc-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: @radius-pill@;
+  background-color: @hover@;
+  color: @text@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-cc-circle:hover {
+  background-color: @pressed@;
+}
+
+.jeronix-cc-circle:checked {
+  background-color: @accent@;
+  color: @on-accent@;
+}
+
+.jeronix-cc-circle:insensitive {
+  color: @text-disabled@;
+}
+
+.jeronix-cc-circle-icon,
+.jeronix-cc-tile-icon,
+.jeronix-cc-list-icon {
+  icon-size: 16px;
+}
+
+.jeronix-cc-chevron,
+.jeronix-cc-list-check {
+  icon-size: 12px;
+  color: @text-muted@;
+}
+
+.jeronix-cc-list-check {
+  color: @accent@;
+  icon-size: 16px;
+}
+
+.jeronix-cc-row-text {
+  border-radius: @radius-small@;
+  padding: 2px @space-xxs@;
+}
+
+.jeronix-cc-row-text:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-row-title {
+  color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-cc-row-status {
+  color: @text-muted@;
+  font-size: @font-caption@;
+}
+
+.jeronix-cc-module-title {
+  color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-cc-tile {
+  min-height: 64px;
+  padding: @space-xs@ @space-xxs@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-cc-tile:hover {
+  background-color: @control-hover@;
+}
+
+.jeronix-cc-tile:active {
+  background-color: @control-pressed@;
+}
+
+.jeronix-cc-tile-box {
+  spacing: @space-xxs@;
+}
+
+.jeronix-cc-tile-label {
+  color: @text@;
+  font-size: @font-caption@;
+  text-align: center;
+}
+
+.jeronix-cc-slider-row {
+  spacing: @space-xs@;
+}
+
+.jeronix-cc-slider-icon {
+  icon-size: 16px;
+  color: @text-muted@;
+}
+
+.jeronix-cc-slider-button {
+  border-radius: @radius-pill@;
+  padding: @space-xxs@;
+}
+
+.jeronix-cc-slider-button:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-media-button {
+  border-radius: @radius-pill@;
+  padding: @space-xs@;
+  color: @text@;
+}
+
+.jeronix-cc-media-button:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-media-button:insensitive {
+  color: @text-disabled@;
+}
+
+/* A module opened in place: back button, title, list, settings link. */
+.jeronix-cc-detail {
+  spacing: @space-xs@;
+}
+
+.jeronix-cc-detail-header {
+  spacing: @space-xs@;
+}
+
+.jeronix-cc-detail-title {
+  color: @text@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-cc-back {
+  color: @text@;
+  border-radius: @radius-pill@;
+  padding: @space-xs@;
+}
+
+.jeronix-cc-back:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-list {
+  padding: @space-xxs@;
+  spacing: 2px;
+}
+
+.jeronix-cc-list-item {
+  border-radius: @radius-small@;
+  padding: @space-xs@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-cc-list-item:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-list-row {
+  spacing: @space-sm@;
+}
+
+.jeronix-cc-list-empty {
+  color: @text-muted@;
+  font-size: @font-caption@;
+  padding: @space-xs@;
+}
+
+.jeronix-cc-more {
+  color: @text@;
+  font-size: @font-caption@;
+  border-radius: @radius-small@;
+  padding: @space-xs@ @space-sm@;
+}
+
+.jeronix-cc-more:hover {
+  background-color: @hover@;
+}
+
+.jeronix-cc-circle:focus,
+.jeronix-cc-tile:focus,
+.jeronix-cc-row-text:focus,
+.jeronix-cc-slider-button:focus,
+.jeronix-cc-media-button:focus,
+.jeronix-cc-back:focus,
+.jeronix-cc-list-item:focus,
+.jeronix-cc-more:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-cc-circle:checked:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @on-accent@;
+}
+
+/* Live updates: the free left end of the taskbar (where Windows 11 shows its
+ * weather) shows what is going on as an icon and two short lines, and opens
+ * the widgets. Flat, like the taskbar's other buttons. */
+.jeronix-live {
+  border-radius: @radius-medium@;
+  padding: @space-xxs@ @space-sm@;
+  transition-duration: @duration-fast@;
+}
+
+.jeronix-live:hover {
+  background-color: @hover@;
+}
+
+/* Expanded on hover (the Dynamic Island): rounder, with more controls.
+ * Dynamic colors are inline styles set by live.js. */
+.jeronix-live.jeronix-live-expanded {
+  border-radius: @radius-large@;
+}
+
+/* How far along a song or a timer is (the Now Bar's progress). */
+/* The track spans the text column; the fill grows from its left edge. */
+.jeronix-live-progress,
+.jeronix-activity-progress {
+  min-width: 96px;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background-color: @border@;
+}
+
+.jeronix-live-progress-fill,
+.jeronix-activity-progress-fill {
+  border-radius: 2px;
+  background-color: @text@;
+}
+
+.jeronix-activity-progress-fill {
+  background-color: @accent@;
+}
+
+/* One dot per workspace, the current one long. */
+.jeronix-live-dots {
+  spacing: 4px;
+  padding-top: 4px;
+}
+
+.jeronix-live-page {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background-color: @text-muted@;
+}
+
+.jeronix-live-page.jeronix-live-page-active {
+  width: 16px;
+  background-color: @text@;
+}
+
+.jeronix-live:active {
+  background-color: @pressed@;
+}
+
+.jeronix-live:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-live-content {
+  spacing: @space-sm@;
+}
+
+.jeronix-live-icon {
+  icon-size: 20px;
+  color: @text@;
+}
+
+.jeronix-live-app-icon {
+  icon-size: 24px;
+}
+
+.jeronix-live-art {
+  icon-size: 28px;
+  border-radius: @radius-small@;
+}
+
+.jeronix-live-text {
+  max-width: 200px;
+}
+
+.jeronix-live-title {
+  color: @text@;
+  font-size: @font-caption@;
+  font-weight: @weight-medium@;
+}
+
+.jeronix-live-detail {
+  color: @text-muted@;
+  font-size: @font-caption@;
+}
+
+/* A screen recording in progress. */
+.jeronix-live-dot {
+  width: 10px;
+  height: 10px;
+  margin: 0 5px;
+  border-radius: 5px;
+  background-color: @danger@;
+}
+
+.jeronix-live-button {
+  border-radius: @radius-pill@;
+  padding: @space-xs@;
+}
+
+.jeronix-live-button:hover {
+  background-color: @hover@;
+}
+
+.jeronix-live-button:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-live-button .jeronix-live-icon {
+  icon-size: 16px;
+}
+
+.jeronix-live-level {
+  spacing: @space-xs@;
+  min-width: 120px;
+}
+
+.jeronix-live-bar,
+.jeronix-widget-meter {
+  height: 4px;
+  border-radius: 2px;
+  background-color: @hover@;
+}
+
+.jeronix-live-bar-fill,
+.jeronix-widget-meter-fill {
+  border-radius: 2px;
+  background-color: @accent@;
+}
+
+/* The widgets panel. */
+.popup-menu-boxpointer.jeronix-widgets-menu {
+  -arrow-rise: 0px;
+  -arrow-base: 0px;
+  -arrow-border-radius: @radius-large@;
+  -boxpointer-gap: @space-sm@;
+}
+
+.jeronix-widgets-menu .popup-menu-content {
+  padding: @space-sm@;
+  background-color: @dock-surface@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-large@;
+  box-shadow: @shadow-overlay@;
+}
+
+.jeronix-widgets-scroll {
+  max-height: 640px;
+}
+
+.jeronix-widgets {
+  width: 360px;
+  spacing: 10px;
+}
+
+/* The scrollbar sits beside the cards, never over them. */
+.jeronix-widgets-scroll StScrollBar {
+  margin-left: @space-xs@;
+}
+
+.jeronix-widget {
+  background-color: @surface-overlay@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-medium@;
+  padding: @space-md@;
+  spacing: @space-xs@;
+}
+
+.jeronix-widget:hover {
+  border-color: @border@;
+}
+
+.jeronix-widget-title {
+  color: @text-muted@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-widget-time {
+  color: @text@;
+  font-size: 2.4em;
+  font-weight: 300;
+}
+
+.jeronix-widget-date {
+  color: @text-muted@;
+  padding-bottom: @space-xs@;
+}
+
+.jeronix-widget-calendar {
+  spacing: 2px;
+}
+
+.jeronix-calendar-head {
+  color: @text-muted@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+  padding: @space-xxs@ 0;
+  text-align: center;
+}
+
+.jeronix-calendar-day {
+  color: @text@;
+  font-size: @font-caption@;
+  min-width: 28px;
+  padding: @space-xxs@ 0;
+  border-radius: @radius-pill@;
+  text-align: center;
+}
+
+.jeronix-calendar-other {
+  color: @text-muted@;
+}
+
+.jeronix-calendar-today {
+  background-color: @accent@;
+  color: @on-accent@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-widget-row {
+  spacing: @space-sm@;
+}
+
+.jeronix-widget-strong {
+  color: @text@;
+  font-weight: @weight-bold@;
+}
+
+.jeronix-widget-muted {
+  color: @text-muted@;
+  font-size: @font-caption@;
+}
+
+.jeronix-widget-art {
+  icon-size: 48px;
+  border-radius: @radius-small@;
+}
+
+.jeronix-widget-weather-icon {
+  icon-size: 40px;
+  color: @text@;
+}
+
+.jeronix-widget-temp {
+  color: @text@;
+  font-size: 1.6em;
+}
+
+.jeronix-widget-controls {
+  spacing: @space-md@;
+  padding-top: @space-xs@;
+}
+
+.jeronix-widget-button {
+  border-radius: @radius-pill@;
+  padding: @space-xs@;
+}
+
+.jeronix-widget-button:hover {
+  background-color: @hover@;
+}
+
+.jeronix-widget-button:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-widget-button-icon {
+  icon-size: 20px;
+  color: @text@;
+}
+
+.jeronix-widget-meter-head {
+  padding-top: @space-xxs@;
+}
+
+.jeronix-widget-meter-label {
+  color: @text@;
+  font-size: @font-caption@;
+}
+
+/* Modules style: three floating modules, each expanding into the panel it
+ * opens (modules.js). The bar itself is invisible; its padding is the
+ * modules' margin from the screen edge (MODULE_MARGIN, and the attached
+ * panels' -arrow-rise, which GNOME keeps from the screen edge too). */
+.jeronix-taskbar.jeronix-modules {
+  background-color: transparent;
+  border-width: 0;
+  padding: @space-xs@;
+}
+
+.jeronix-module {
+  background-color: @dock-surface@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-large@;
+}
+
+/* The live updates fill their module (taskbar-layout.js), its corners
+ * concentric with the module's: radius-large less the module padding
+ * (MODULE_PADDING, 6px), expanded or not. */
+.jeronix-modules .jeronix-live,
+.jeronix-modules .jeronix-live.jeronix-live-expanded {
+  border-radius: @radius-medium@;
+}
+
+/* Where a module and its panel meet, their corners are square. */
+.jeronix-module.jeronix-module-open.jeronix-fused {
+  border-radius: 0 0 @radius-large@ @radius-large@;
+  border-top-width: 0;
+}
+
+.jeronix-module.jeronix-module-open.jeronix-flush-left {
+  border-radius: 0 @radius-large@ @radius-large@ @radius-large@;
+}
+
+.jeronix-module.jeronix-module-open.jeronix-flush-right {
+  border-radius: @radius-large@ 0 @radius-large@ @radius-large@;
+}
+
+.popup-menu-boxpointer.jeronix-attached {
+  -arrow-rise: @space-xs@;
+  -arrow-base: 0px;
+  -arrow-border-radius: @radius-large@;
+  -boxpointer-gap: 0px;
+}
+
+.jeronix-attached .popup-menu-content {
+  background-color: @dock-surface@;
+  border: @border-width@ solid @dock-highlight@;
+  border-radius: @radius-large@;
+  box-shadow: none;
+}
+
+.jeronix-attached.jeronix-fused .popup-menu-content {
+  border-radius: @radius-large@ @radius-large@ 0 0;
+  border-bottom-width: 0;
+}
+
+.jeronix-attached.jeronix-flush-left .popup-menu-content {
+  border-radius: @radius-large@ @radius-large@ @radius-large@ 0;
+}
+
+.jeronix-attached.jeronix-flush-right .popup-menu-content {
+  border-radius: @radius-large@ @radius-large@ 0 @radius-large@;
+}
+
+/* Live updates: more going on than shown, privacy and warnings. */
+.jeronix-live-more {
+  color: @text-muted@;
+  font-size: @font-caption@;
+  font-weight: @weight-bold@;
+  background-color: @hover@;
+  border-radius: @radius-pill@;
+  padding: 2px @space-sm@;
+}
+
+.jeronix-live-more:hover {
+  color: @text@;
+  background-color: @pressed@;
+}
+
+.jeronix-live-more:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-live-icon.jeronix-live-privacy {
+  color: @warning@;
+}
+
+.jeronix-live-icon.jeronix-live-warning {
+  color: @danger@;
+}
+
+/* The Activities card and the Timer widget in the widgets panel. */
+.jeronix-widgets-list {
+  spacing: 10px;
+}
+
+.jeronix-widget-activities {
+  margin-bottom: 10px;
+}
+
+.jeronix-activity-rows {
+  spacing: @space-xs@;
+}
+
+/* Each activity is a row; a click shows it in the taskbar, and the one
+ * shown there is marked. */
+.jeronix-activity-row {
+  spacing: @space-sm@;
+  padding: @space-xs@;
+  border-radius: @radius-small@;
+}
+
+.jeronix-activity-row:hover {
+  background-color: @hover@;
+}
+
+.jeronix-activity-row:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
+}
+
+.jeronix-activity-row.jeronix-activity-shown {
+  box-shadow: inset 3px 0 0 @accent@;
+}
+
+.jeronix-activity-line {
+  spacing: @space-sm@;
+}
+
+/* More than two controls: on their own line under the activity. */
+.jeronix-activity-controls {
+  spacing: @space-md@;
+  padding-top: @space-xs@;
+}
+
+.jeronix-activity-icon {
+  icon-size: 24px;
+  color: @text@;
+}
+
+.jeronix-widget-timers {
+  spacing: @space-xs@;
+}
+
+.jeronix-widget-pill {
+  color: @text@;
+  background-color: @hover@;
+  border-radius: @radius-pill@;
+  padding: @space-xs@ @space-xxs@;
+  font-size: @font-caption@;
+  font-weight: @weight-medium@;
+}
+
+.jeronix-widget-pill:hover {
+  background-color: @pressed@;
+}
+
+.jeronix-widget-pill:focus {
+  box-shadow: inset 0 0 0 @focus-width@ @focus-ring@;
 }

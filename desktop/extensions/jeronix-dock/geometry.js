@@ -138,13 +138,60 @@ export const TRAY_GAP = 8;
  * box). The tray sits at the right end. The app group is centered on the
  * whole bar (not on the space left of the tray), like Windows 11, unless
  * that would run into the tray: then it moves left just enough.
+ *
+ * The live updates area (liveWidth, 0 for none) takes the place Windows
+ * gives its widgets: the left end of the bar. A centered group stays
+ * centered (the area uses the free space beside it); a left-aligned group
+ * follows the area, as the icons follow the widgets in Windows 11. Where the
+ * area does not fit whole it is not shown (liveX is null), and the apps are
+ * placed as without it.
  */
-export function taskbarRow({width, groupWidth, trayWidth, centered}) {
+export function taskbarRow({width, groupWidth, trayWidth, centered, liveWidth = 0}) {
     const trayX = Math.max(0, width - trayWidth);
     const limit = trayWidth > 0 ? trayX - TRAY_GAP : width;
     let groupX = centered ? Math.round((width - groupWidth) / 2) : 0;
     groupX = Math.max(0, Math.min(groupX, limit - groupWidth));
-    return {groupX, groupWidth: Math.max(0, Math.min(groupWidth, limit - groupX)), trayX};
+    groupWidth = Math.max(0, Math.min(groupWidth, limit - groupX));
+    let liveX = null;
+    if (liveWidth > 0) {
+        if (centered && groupX - TRAY_GAP >= liveWidth) {
+            liveX = 0;
+        } else if (!centered && liveWidth + TRAY_GAP + groupWidth <= limit) {
+            liveX = 0;
+            groupX = liveWidth + TRAY_GAP;
+        }
+    }
+    return {groupX, groupWidth, trayX, liveX};
+}
+
+/**
+ * A taskbar module grown toward the panel that opens from it, as [x, width]
+ * (offsets in the bar). rects holds each module's resting [x, width]
+ * (left may be null); width is the bar's. A module grows from its outer
+ * side: the left one to the right, the right one to the left, the center
+ * one both ways (equally where it can, else into whichever side has room).
+ * It grows up to wanted, never past a neighbour (keeping gap), and never
+ * shrinks below its resting width.
+ */
+export function moduleSpan(rects, side, wanted, gap, width) {
+    const [x, w] = rects[side];
+    const right = r => r[0] + r[1];
+    if (side === 'left') {
+        const limit = rects.center ? rects.center[0] - gap : width;
+        return [x, Math.max(w, Math.min(wanted, limit - x))];
+    }
+    if (side === 'right') {
+        const limit = rects.center ? right(rects.center) + gap : 0;
+        const grown = Math.max(w, Math.min(wanted, right(rects.right) - limit));
+        return [right(rects.right) - grown, grown];
+    }
+    const roomLeft = x - (rects.left ? right(rects.left) + gap : 0);
+    const roomRight = (rects.right ? rects.right[0] - gap : width) - right(rects.center);
+    const total = Math.max(0, wanted - w);
+    let growLeft = Math.max(0, Math.min(roomLeft, total / 2));
+    const growRight = Math.max(0, Math.min(roomRight, total - growLeft));
+    growLeft = Math.max(0, Math.min(roomLeft, total - growRight));
+    return [x - growLeft, w + growLeft + growRight];
 }
 
 export function dropIndex(centers, coord) {

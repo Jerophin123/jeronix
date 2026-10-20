@@ -43,7 +43,7 @@ EXTENSION_ICONS = {
 MODES = ("dark", "light")
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 PLACEHOLDER = re.compile(r"@([a-z0-9-]+)@")
-PARTS = ("extensions", "wallpapers", "icons", "branding")
+PARTS = ("extensions", "wallpapers", "icons", "branding", "desktop")
 
 # Common desktop resolutions the wallpapers are rendered at. The vector
 # source adapts its composition to each aspect ratio instead of cropping.
@@ -104,6 +104,10 @@ def palette(tokens, mode):
     i = tokens["interaction"]
     p["control-hover"] = blend(p["text"], p["surface-overlay"], i["hover-opacity"])
     p["control-pressed"] = blend(p["text"], p["surface-overlay"], i["pressed-opacity"])
+    # The lock and login screens sit on a darkened wallpaper in both modes,
+    # so their text is white and warnings use the dark-mode warning color.
+    p["on-lock"] = "#FFFFFF"
+    p["lock-warning"] = tokens["color"]["dark"]["warning"]
     return p
 
 
@@ -213,7 +217,24 @@ def theme_variables(tokens, mode, platform):
     v["control-min-height"] = f"{c['control-min-height-px']}px"
     v["popover-min-width"] = f"{c['popover-min-width-em']}em"
     v["search-entry-width"] = f"{c['search-entry-width-em']}em"
+    v.update(live_accent(mode, i))
     return v
+
+
+def live_accent(mode, interaction):
+    """The shell's accent-colored parts follow the accent chosen in Settings
+    (org.gnome.desktop.interface accent-color) as it changes: St resolves
+    -st-accent-color itself. The tokens' accent is what the default, blue,
+    is designed and contrast-checked against. Focus rings and the panel's
+    light accent keep their token colors, as Windows keeps its focus ring."""
+    adjust = "st-lighten" if mode == "dark" else "st-darken"
+    return {
+        "accent": "-st-accent-color",
+        "on-accent": "-st-accent-fg-color",
+        "accent-strong": f"{adjust}(-st-accent-color, 5%)",
+        "selected": f"st-transparentize(-st-accent-color, {1 - interaction['selected-opacity']:g})",
+        "selection": f"st-transparentize(-st-accent-color, {1 - interaction['selected-opacity'] * 1.5:g})",
+    }
 
 
 def render_template(template, variables):
@@ -232,7 +253,9 @@ def theme_checks(tokens, mode):
     """Computed-style expectations for the real shell (theme_lifecycle.py).
 
     Each check builds a chain of St widgets ({name, style, pseudo}) inside the
-    shell and compares one resolved property of the innermost one.
+    shell and compares one resolved property of the innermost one. Checks
+    with "follows" expect the shell's live accent ("accent") or the text
+    color on it ("accent-fg") instead; "expect" is then the default's token.
     """
     p = palette(tokens, mode)
     return [
@@ -248,10 +271,10 @@ def theme_checks(tokens, mode):
          "chain": [{"style": "quick-toggle button"}], "property": "background-color", "expect": p["surface-overlay"]},
         {"what": "quick toggle (on)",
          "chain": [{"style": "quick-toggle button", "pseudo": "checked"}], "property": "background-color",
-         "expect": p["accent"]},
+         "expect": p["accent"], "follows": "accent"},
         {"what": "quick toggle (on) text",
          "chain": [{"style": "quick-toggle button", "pseudo": "checked"}], "property": "color",
-         "expect": p["on-accent"]},
+         "expect": p["on-accent"], "follows": "accent-fg"},
         {"what": "search entry",
          "chain": [{"style": "search-entry"}], "property": "background-color", "expect": p["surface-raised"]},
         {"what": "search results section",
@@ -269,6 +292,12 @@ def theme_checks(tokens, mode):
         {"what": "keyboard focus ring on quick toggles",
          "chain": [{"style": "quick-toggle button", "pseudo": "focus"}], "property": "box-shadow",
          "expect": p["focus-ring"]},
+        # Lock and login screens: white text and light-blue focus in both modes.
+        {"what": "lock screen clock",
+         "chain": [{"style": "unlock-dialog-clock"}], "property": "color", "expect": p["on-lock"]},
+        {"what": "password field focus ring",
+         "chain": [{"style": "login-dialog-prompt-entry", "pseudo": "focus"}], "property": "box-shadow",
+         "expect": p["panel-accent"]},
     ]
 
 
@@ -450,6 +479,77 @@ BRANDING = (
 )
 
 
+# -- every application: GTK 4 / libadwaita colors -------------------------------
+
+# libadwaita's named colors (CSS variables) -> palette roles. Kept in step with
+# apps/jeronix_common/style.py (tests/unit/test_theme.py compares them). The
+# accent is not among them: libadwaita follows the accent chosen in Settings
+# live, and a fixed one here would override that choice in every app.
+GTK_COLORS = {
+    "window-bg-color": "surface", "window-fg-color": "text",
+    "view-bg-color": "surface-raised", "view-fg-color": "text",
+    "headerbar-bg-color": "surface", "headerbar-fg-color": "text", "headerbar-backdrop-color": "surface",
+    "sidebar-bg-color": "surface-overlay", "sidebar-fg-color": "text", "sidebar-backdrop-color": "surface-overlay",
+    "secondary-sidebar-bg-color": "surface-raised", "secondary-sidebar-fg-color": "text",
+    "card-bg-color": "surface-raised", "card-fg-color": "text",
+    "popover-bg-color": "surface-raised", "popover-fg-color": "text",
+    "dialog-bg-color": "surface-raised", "dialog-fg-color": "text",
+    "thumbnail-bg-color": "surface-raised", "thumbnail-fg-color": "text",
+    "success-color": "success", "warning-color": "warning", "error-color": "danger",
+}
+
+
+def gtk4_css(tokens):
+    """The JERONIX colors for every GTK 4 / libadwaita application, light
+    and dark. Not applied in high contrast, which keeps its own colors."""
+    def block(mode):
+        p = palette(tokens, mode)
+        return "\n".join(f"  --{name}: {p[role]};" for name, role in GTK_COLORS.items())
+    return ("/* JERONIX colors for GTK 4 / libadwaita applications. Generated by\n"
+            " * scripts/jeronix_design.py from design/tokens/tokens.json; imported from\n"
+            " * ~/.config/gtk-4.0/gtk.css by the JERONIX user setup. */\n"
+            "@media (prefers-contrast: no-preference) {\n:root {\n" + block("light") + "\n}\n}\n\n"
+            "@media (prefers-color-scheme: dark) and (prefers-contrast: no-preference) {\n:root {\n"
+            + block("dark") + "\n}\n}\n")
+
+
+# -- the terminal (Ptyxis) -------------------------------------------------------------
+
+# ANSI colors 0-15 per mode, chosen for contrast on the JERONIX terminal
+# backgrounds (tests/unit/test_theme.py checks the colored ones).
+TERMINAL_ANSI = {
+    "dark": ["#2A3140", "#F08A80", "#93C49E", "#E8C27A", "#4CC2FF", "#C9A0F0", "#6FD6D6", "#C2CCDA",
+             "#6F7B8E", "#F7A59C", "#B5DDBC", "#F2D49A", "#99DFFF", "#DCC0F7", "#9FE6E6", "#FFFFFF"],
+    "light": ["#1A2130", "#A8261E", "#2E6B3F", "#7A5600", "#005FB8", "#7A3E9D", "#0F6670", "#536073",
+              "#66738A", "#B83228", "#2F7A47", "#865F00", "#0067C7", "#8746AD", "#11707A", "#2F3949"],
+}
+TERMINAL_BACKGROUND = {"dark": "surface", "light": "surface-raised"}
+# The colored ANSI entries (red..cyan, normal and bright).
+TERMINAL_COLORED = (1, 2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 14)
+
+
+def ptyxis_palette(tokens):
+    """A Ptyxis palette file (GKeyFile) named JERONIX."""
+    lines = ["[Palette]", "Name=JERONIX", ""]
+    for mode, section in (("light", "Light"), ("dark", "Dark")):
+        p = palette(tokens, mode)
+        lines += [f"[{section}]", f"Background={p[TERMINAL_BACKGROUND[mode]]}", f"Foreground={p['text']}",
+                  f"Cursor={p['accent']}"]
+        lines += [f"Color{i}={color}" for i, color in enumerate(TERMINAL_ANSI[mode])] + [""]
+    return "\n".join(lines)
+
+
+def build_desktop(tokens, out):
+    """Files for every app and the terminal: GTK colors, the Ptyxis palette."""
+    dest = out / "desktop"
+    dest.mkdir(parents=True, exist_ok=True)
+    gtk = dest / "gtk-4.0.css"
+    gtk.write_text(gtk4_css(tokens), encoding="utf-8")
+    pal = dest / "JERONIX.palette"
+    pal.write_text(ptyxis_palette(tokens), encoding="utf-8")
+    return [gtk, pal]
+
+
 def build_branding(out):
     return [render_svg(ICONS / src, out / "branding" / name, w, h) for name, src, w, h in BRANDING]
 
@@ -471,6 +571,8 @@ def build(out, parts=PARTS):
         built += build_icons(tokens, out)
     if "branding" in parts:
         built += build_branding(out)
+    if "desktop" in parts:
+        built += build_desktop(tokens, out)
     manifest = {"tokens-version": tokens["version"], "parts": list(parts),
                 "files": sorted(str(p.relative_to(out)) for p in built)}
     (out / "build-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

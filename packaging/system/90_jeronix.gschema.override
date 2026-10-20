@@ -1,0 +1,5 @@
+# JERONIX defaults that cannot live in the dconf system database because they
+# apply to every instance of a relocatable schema. The JERONIX user setup
+# installs the palette file each user needs before a terminal can open.
+[org.gnome.Ptyxis.Profile]
+palette='JERONIX'

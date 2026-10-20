@@ -17,9 +17,9 @@
         <choice value="intellihide"/>
         <choice value="autohide"/>
       </choices>
-      <default>'intellihide'</default>
+      <default>'always'</default>
       <summary>When the dock is visible</summary>
-      <description>always: visible and reserves space; intellihide: hides only when a window overlaps it; autohide: appears when the pointer reaches the screen edge.</description>
+      <description>always (the default, as on Windows 11): visible and reserves space, so maximized and snapped windows fit above it; intellihide: hides only when a window overlaps it; autohide: appears when the pointer reaches the screen edge. In the modules style a hidden taskbar comes back one module at a time: only the module above the pointer.</description>
     </key>
     <key name="icon-size" type="i">
       <range min="24" max="72"/>
@@ -36,7 +36,7 @@
     </key>
     <key name="show-start-button" type="b">
       <default>true</default>
-      <summary>Show the JERONIX Start button (opens the JERONIX Launcher) at the head of the dock</summary>
+      <summary>Show the JERONIX Start button (opens the Start menu) at the head of the dock</summary>
     </key>
     <key name="show-search-button" type="b">
       <default>true</default>
@@ -44,11 +44,13 @@
     </key>
     <key name="style" type="s">
       <choices>
+        <choice value="modules"/>
         <choice value="taskbar"/>
         <choice value="floating"/>
       </choices>
-      <default>'taskbar'</default>
-      <summary>Full-width Windows 11-style taskbar, or a floating dock (side positions are always floating)</summary>
+      <default>'modules'</default>
+      <summary>Expandable modules, a full-width Windows 11-style taskbar, or a floating dock (side positions are always floating)</summary>
+      <description>modules: three floating modules (live updates and widgets, Start and apps, Control Center and notifications), each expanding into the panel it opens.</description>
     </key>
     <key name="alignment" type="s">
       <choices>
@@ -78,6 +80,25 @@
       <default>true</default>
       <summary>The Super key opens the Start menu instead of the overview</summary>
     </key>
+    <key name="start-pinned-apps" type="as">
+      <default>['org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'org.gnome.Ptyxis.desktop', 'org.gnome.TextEditor.desktop', 'io.jeronix.Settings.desktop', 'org.gnome.Calculator.desktop', 'org.gnome.Loupe.desktop', 'org.gnome.SystemMonitor.desktop', 'io.jeronix.LayoutStudio.desktop', 'io.jeronix.SystemInfo.desktop']</default>
+      <summary>Apps pinned to the Start menu, in order</summary>
+      <description>Desktop IDs. Separate from the taskbar's pins (GNOME's favorite-apps). Apps that are not installed are skipped and keep their place.</description>
+    </key>
+    <key name="start-hidden-apps" type="as">
+      <default>['org.gnome.Settings.desktop', 'org.gnome.Yelp.desktop']</default>
+      <summary>Apps the Start menu never lists or finds</summary>
+      <description>Desktop IDs. By default GNOME Settings, which JERONIX Settings replaces, and Help, which shows Ubuntu's desktop guide.</description>
+    </key>
+    <key name="control-center-modules" type="as">
+      <default>['wifi', 'bluetooth', 'airplane-mode', 'vpn', 'focus', 'stay-awake', 'dark-mode', 'night-light', 'power-mode', 'display', 'sound', 'now-playing', 'battery', 'screenshot', 'screen-recording', 'settings']</default>
+      <summary>Control Center modules, in order</summary>
+      <description>Modules not listed are hidden. Modules whose hardware or service is missing are left out automatically. Ids: wifi, bluetooth, airplane-mode, vpn, focus, stay-awake, dark-mode, night-light, power-mode, display, sound, now-playing, battery, screenshot, screen-recording, settings.</description>
+    </key>
+    <key name="control-center-reduce-transparency" type="b">
+      <default>false</default>
+      <summary>Draw the Control Center on a solid background</summary>
+    </key>
     <key name="hide-overview-dash" type="b">
       <default>true</default>
       <summary>Hide GNOME's dash and app grid button in the overview (Task View)</summary>
@@ -89,6 +110,36 @@
     <key name="show-previews" type="b">
       <default>true</default>
       <summary>Show window previews when hovering a running application</summary>
+    </key>
+    <key name="live-updates" type="b">
+      <default>true</default>
+      <summary>Show live updates and the widgets button in the taskbar</summary>
+      <description>The free left end of the taskbar shows what is going on (music, a screen recording, volume, notifications, charging) and opens the widgets.</description>
+    </key>
+    <key name="live-widgets" type="as">
+      <default>['clock', 'timer', 'media', 'weather', 'system', 'battery']</default>
+      <summary>Widgets, in order</summary>
+      <description>Known widgets: clock, timer, media, weather, system, battery. A widget without its hardware or app (battery, weather) is left out by itself.</description>
+    </key>
+    <key name="live-activities" type="as">
+      <default>['media', 'timers', 'recording', 'privacy', 'downloads', 'levels', 'notifications', 'battery', 'network', 'keyboard', 'stay-awake', 'do-not-disturb', 'workspaces']</default>
+      <summary>What the live updates show</summary>
+      <description>Known: media, timers, recording, privacy (microphone and camera in use), downloads, levels (volume, brightness and microphone mute), notifications, battery, network, keyboard (Caps Lock and keyboard layout), stay-awake, do-not-disturb, workspaces (the workspace switched to).</description>
+    </key>
+    <key name="live-colors" type="s">
+      <choices>
+        <choice value="dynamic"/>
+        <choice value="accent"/>
+        <choice value="neutral"/>
+      </choices>
+      <default>'dynamic'</default>
+      <summary>Colors of the live updates</summary>
+      <description>dynamic: the color of what is going on (red while recording, orange for a timer, the album's color for music); accent: the system accent color; neutral: no color.</description>
+    </key>
+    <key name="live-expand" type="b">
+      <default>true</default>
+      <summary>Expand the live updates on hover</summary>
+      <description>Hovering the live updates grows them with more controls (next track, a minute more on a timer, quick actions), like the Dynamic Island.</description>
     </key>
   </schema>
 </schemalist>

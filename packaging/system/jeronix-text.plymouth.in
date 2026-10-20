@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=JERONIX Text
+Description=Text mode boot splash: the JERONIX name on graphite, with blue progress dots.
+ModuleName=ubuntu-text
+
+[ubuntu-text]
+title=JERONIX @VERSION@
+black=0x121722
+white=0xffffff
+brown=0x0078d4
+blue=0x2f3747

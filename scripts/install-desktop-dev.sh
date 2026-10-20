@@ -102,8 +102,8 @@ cat > "$properties" <<EOF
     <filename-dark>$wallpaper_dir/jeronix-dark.png</filename-dark>
     <options>zoom</options>
     <shade_type>solid</shade_type>
-    <pcolor>#1E1D1B</pcolor>
-    <scolor>#1E1D1B</scolor>
+    <pcolor>#1C2230</pcolor>
+    <scolor>#1C2230</scolor>
   </wallpaper>
 </wallpapers>
 EOF
@@ -118,7 +118,7 @@ put "$build/icons/JERONIX" "$data/icons/JERONIX"
 # layout tool). No autostart entry for development installs.
 while IFS= read -r path; do
     installed+=("$path")
-done < <(python3 packaging/jeronix_apps.py "$data" --python "$(command -v python3)")
+done < <(python3 packaging/jeronix_apps.py "$data" --python "$(command -v python3)" --built "$build")
 
 mkdir -p "$(dirname "$manifest")"
 printf '%s\n' "${installed[@]}" > "$manifest"

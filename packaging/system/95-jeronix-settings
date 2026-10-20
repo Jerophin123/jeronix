@@ -1,0 +1,17 @@
+# JERONIX login screen (GDM) settings. Compiled with the other files in
+# this folder each time GDM starts (/usr/share/gdm/generate-config), in name
+# order, the last file setting a key winning. These values replace the schema
+# defaults, including Ubuntu's logo from 10_ubuntu-settings.gschema.override.
+# Named after Ubuntu's 90-debian-settings (/etc/gdm3/greeter.dconf-defaults)
+# so a logo uncommented there does not bring the Ubuntu one back. To override
+# JERONIX here, add a file such as 99-local-settings to this folder.
+
+[org/gnome/login-screen]
+logo='/usr/share/jeronix/branding/jeronix-login-logo.png'
+
+[org/gnome/desktop/interface]
+accent-color='blue'
+color-scheme='prefer-dark'
+icon-theme='JERONIX'
+cursor-theme='Adwaita'
+font-name='Noto Sans 11'

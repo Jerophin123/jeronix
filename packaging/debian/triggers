@@ -1,0 +1,2 @@
+# Rebuild the JERONIX login screen when GNOME Shell's theme changes.
+interest-noawait /usr/share/gnome-shell/gnome-shell-theme.gresource

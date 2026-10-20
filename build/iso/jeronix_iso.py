@@ -265,6 +265,20 @@ def edit_install_sources(text, added_bytes):
     return text
 
 
+def edit_disk_info(text, series):
+    """The product line Ubuntu's installer shows ("Install JERONIX"): it
+    takes the name and version from /.disk/info, up to the first quote.
+    'Ubuntu 26.04.1 LTS "Resolute Raccoon" - Release amd64 (20260826)'
+    becomes 'JERONIX 26.04 "Resolute Raccoon" - Release amd64 (20260826),
+    Ubuntu 26.04.1 LTS base'. Only the text changes: the file stays, and
+    the medium is found by its volume ID, which is Ubuntu's."""
+    first = text.strip().splitlines()[0] if text.strip() else ""
+    m = re.fullmatch(r'Ubuntu (\d+\.\d+(?:\.\d+)*(?: LTS)?) (".*)', first)
+    if not m:
+        raise BuildError(f".disk/info: unexpected product line {first!r}")
+    return f"JERONIX {series} {m.group(2)}, Ubuntu {m.group(1)} base\n"
+
+
 def edit_md5sums(text, changed):
     """changed: {iso_path: md5}. Replaces or adds './path' lines."""
     lines, seen = [], set()
@@ -630,6 +644,7 @@ def build(args):
             lb = lb.replace(f'"{old}"', f'"{new}"')
         put_text("/boot/grub/loopback.cfg", lb)
     put_text("/casper/install-sources.yaml", edit_install_sources(sources, payload_bytes))
+    put_text("/.disk/info", edit_disk_info(texts["/.disk/info"], base["ubuntu"]["series"]))
     size_path = f"/casper/{BASE_LAYER[:-9]}.size"
     if size_path in texts:
         put_text(size_path, f"{int(texts[size_path].strip()) + payload_bytes}\n")

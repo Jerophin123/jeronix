@@ -2,7 +2,7 @@
   "schema": 2,
   "id": "studio",
   "name": "Studio",
-  "version": "0.2.0",
+  "version": "0.3.1",
   "summary": "Workspace-first for focused work: four fixed workspaces on Super+1–4 and a dock that appears on demand.",
   "description": "A productivity layout: four fixed workspaces, always numbered in the top bar and reachable with Super+1 to Super+4 (Super+Shift+number moves the focused window there). Alt+Tab shows only the current workspace's windows. The dock sits on the right edge and appears when you touch it, so windows get the full screen.",
   "gnome_shell": [
@@ -10,17 +10,21 @@
   ],
   "settings": [
     {"schema": "org.gnome.desktop.interface", "key": "icon-theme", "value": "JERONIX",
-     "reason": "Original JERONIX icons; anything JERONIX does not draw falls back to Yaru and Adwaita."},
+     "reason": "Original JERONIX icons; anything JERONIX does not draw falls back to Adwaita."},
     {"schema": "org.gnome.desktop.sound", "key": "theme-name", "value": "freedesktop",
-     "reason": "Neutral system sounds instead of Ubuntu's Yaru sound theme."},
+     "reason": "Neutral, quiet system sounds."},
     {"schema": "org.gnome.desktop.interface", "key": "gtk-theme", "value": "Adwaita-dark",
-     "reason": "Older (GTK 3) applications use GNOME's neutral dark theme instead of Ubuntu's Yaru."},
+     "reason": "Older (GTK 3) applications use a neutral dark theme with a blue accent."},
     {"schema": "org.gnome.desktop.interface", "key": "font-name", "value": "Noto Sans 11",
-     "reason": "A neutral interface typeface instead of Ubuntu's own."},
+     "reason": "A neutral, highly legible interface typeface."},
     {"schema": "org.gnome.desktop.interface", "key": "document-font-name", "value": "Noto Sans 11",
      "reason": "Documents use the same neutral typeface."},
-    {"schema": "org.gnome.desktop.interface", "key": "accent-color", "value": "slate",
-     "reason": "Ubuntu shows the slate accent as Yaru sage, the JERONIX secondary color, instead of Ubuntu orange."},
+    {"schema": "org.gnome.desktop.interface", "key": "accent-color", "value": "blue",
+     "reason": "Blue is the JERONIX accent: buttons, switches and selections in every app."},
+    {"schema": "org.gnome.desktop.interface", "key": "monospace-font-name", "value": "Noto Sans Mono 11",
+     "reason": "A neutral monospace typeface for the terminal and code."},
+    {"schema": "org.gnome.desktop.interface", "key": "cursor-theme", "value": "Adwaita",
+     "reason": "The neutral pointer."},
     {"schema": "org.gnome.desktop.interface", "key": "color-scheme", "value": "prefer-dark",
      "reason": "Dark surfaces for long sessions."},
     {"schema": "org.gnome.desktop.interface", "key": "enable-hot-corners", "value": false,
@@ -35,8 +39,6 @@
      "reason": "Fixed workspaces keep their numbers."},
     {"schema": "org.gnome.mutter", "key": "workspaces-only-on-primary", "value": false,
      "reason": "Every monitor switches together, so a workspace is a whole context."},
-    {"schema": "org.gnome.mutter", "key": "edge-tiling", "value": true,
-     "reason": "Super+Left/Right and drag-to-edge tiling."},
     {"schema": "org.gnome.mutter", "key": "center-new-windows", "value": true,
      "reason": "Predictable placement."},
     {"schema": "org.gnome.shell.app-switcher", "key": "current-workspace-only", "value": true,
@@ -92,7 +94,17 @@
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "system-tray", "value": false,
      "reason": "The top bar keeps Quick Settings and the clock next to the workspaces."},
     {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "hide-top-bar", "value": false,
-     "reason": "The top bar with numbered workspaces is the center of this layout."}
+     "reason": "The top bar with numbered workspaces is the center of this layout."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-start-button", "value": true,
+     "reason": "Start sits at the head of the dock."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "show-search-button", "value": false,
+     "reason": "A slim dock: search is one keystroke away (Super, then type)."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "super-key-start-menu", "value": false,
+     "reason": "Super opens the overview with the numbered workspaces, the heart of this layout."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "hide-overview-dash", "value": true,
+     "reason": "The dock already holds the apps, so the overview shows windows and workspaces only."},
+    {"schema": "org.gnome.shell.extensions.jeronix-dock", "key": "live-updates", "value": false,
+     "reason": "A side dock has no room for live updates; the top bar keeps the tray."}
   ],
   "extensions": {
     "enable": [
@@ -107,6 +119,7 @@
     ]
   },
   "limitations": [
+    "Window snapping is left to the system: GNOME's edge tiling, or Ubuntu's Tiling Assistant where it is installed (it turns GNOME's off while it runs).",
     "Super+1 to Super+4 no longer launch dock favorites in this layout; restoring the snapshot brings that back.",
     "Workspaces beyond four are not created automatically."
   ]

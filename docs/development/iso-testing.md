@@ -52,9 +52,16 @@ Record each result (pass/fail plus a note or screenshot).
 - [ ] `cat /etc/jeronix-release` and `ls /cdrom/jeronix` work.
 
 **Installation (UEFI VM, then optionally BIOS)**
-- [ ] The installer starts. Its sources are labelled "JERONIX Desktop ...".
+- [ ] The installer starts as **JERONIX Installer**: the JERONIX logo on the first page, "Try JERONIX" /
+      "Install JERONIX", JERONIX blue buttons and JERONIX pictures on every page (light and dark).
+- [ ] Its sources are labelled "JERONIX Desktop ...".
+- [ ] While installing, the six JERONIX slides play (Welcome, Start, Everything at a glance, Control
+      Center, A layout that fits, Built on Ubuntu).
+- [ ] Closing the installer in the live session does not bring desktop icons or Ubuntu's dock back.
 - [ ] Install with *Erase disk*, default choice, then reboot and remove the ISO.
 - [ ] The installed system boots (UEFI VM: still with Secure Boot on).
+- [ ] At the first login, **only** JERONIX Welcome opens (no "Welcome to Ubuntu"): style and accent,
+      layout, privacy, essentials. It does not open again at the next login.
 - [ ] After login, check the JERONIX theme, wallpaper and Stay Awake, and
       that `jeronix-layout plan /usr/share/jeronix/layouts/pure.json` runs.
 - [ ] `sudo apt install /cdrom/jeronix/jeronix-desktop_*.deb` (with the ISO

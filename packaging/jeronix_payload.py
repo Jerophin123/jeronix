@@ -31,6 +31,17 @@ CONFIG = ROOT / "packaging" / "jeronix-desktop.json"
 PURE = ROOT / "desktop" / "layouts" / "pure.json"
 SYSTEM_DATA = Path("/usr/share")
 DCONF_DB = "jeronix"
+SYSTEM_FILES = ROOT / "packaging" / "system"
+MAINTAINER_SCRIPTS = ROOT / "packaging" / "debian"
+PLYMOUTH_BASE = Path("/usr/share/plymouth/themes/spinner")
+# Ubuntu files the .deb replaces (preinst moves each to <file>.ubuntu, postrm
+# moves it back). The first group gets a JERONIX version (system_files());
+# the second is only moved aside: Ubuntu help and Ubuntu Pro messages at
+# terminal and SSH logins.
+REPLACED = ("/usr/lib/os-release", "/etc/lsb-release", "/etc/issue", "/etc/issue.net",
+            "/etc/default/motd-news", "/usr/share/wayland-sessions/ubuntu.desktop")
+REMOVED = ("/etc/update-motd.d/10-help-text", "/etc/update-motd.d/91-contract-ua-esm-status")
+DIVERSIONS = REPLACED + REMOVED
 
 
 def load_config():
@@ -104,11 +115,123 @@ def background_properties(config):
     <filename-dark>{d}</filename-dark>
     <options>zoom</options>
     <shade_type>solid</shade_type>
-    <pcolor>#1E1D1B</pcolor>
-    <scolor>#1E1D1B</scolor>
+    <pcolor>#1C2230</pcolor>
+    <scolor>#1C2230</scolor>
   </wallpaper>
 </wallpapers>
 """
+
+
+def os_identity(config, platform):
+    """os-release, lsb-release and issue texts. The names people see say
+    JERONIX; the machine IDs stay Ubuntu's (ID=ubuntu, DISTRIB_ID=Ubuntu)
+    because apt tooling, the Ubuntu Pro client and many installers check
+    them, and changing them can break updates."""
+    u = platform["ubuntu"]
+    pretty = f"JERONIX {u['version']}"
+    return {
+        "usr/lib/os-release": (f'PRETTY_NAME="{pretty}"\nNAME="JERONIX"\nVERSION_ID="{u["version"]}"\n'
+                               f'VERSION="{u["version"]}"\nVERSION_CODENAME={u["codename"]}\nID=ubuntu\n'
+                               f'ID_LIKE=debian\nUBUNTU_CODENAME={u["codename"]}\nLOGO=jeronix\n'),
+        "etc/lsb-release": (f'DISTRIB_ID=Ubuntu\nDISTRIB_RELEASE={u["version"]}\n'
+                            f'DISTRIB_CODENAME={u["codename"]}\nDISTRIB_DESCRIPTION="{pretty}"\n'),
+        # getty expands \n (host name) and \l (terminal line).
+        "etc/issue": pretty + " \\n \\l\n\n",
+        "etc/issue.net": pretty + "\n",
+        "etc/default/motd-news": "# JERONIX: no news from Ubuntu at terminal and SSH logins.\nENABLED=0\n",
+    }
+
+
+def session_file(source=Path("/usr/share/wayland-sessions/ubuntu.desktop")):
+    """The login session entry, named JERONIX. Built from the installed one
+    (or Ubuntu's diverted original) so the command line stays exactly theirs."""
+    original = source.with_name(source.name + ".ubuntu")
+    text = (original if original.exists() else source).read_text(encoding="utf-8")
+    lines = []
+    for line in text.splitlines():
+        if line.startswith("Name="):
+            line = "Name=JERONIX"
+        elif line.startswith("Comment="):
+            line = "Comment=This session logs you into JERONIX"
+        elif line.startswith(("X-Ubuntu-Gettext-Domain=", "Name[", "Comment[")):
+            continue  # translations would bring the old name back
+        lines.append(line)
+    if "Name=JERONIX" not in lines or not any(line.startswith("Exec=") for line in lines):
+        raise SystemExit(f"unexpected session file {source}")
+    return "\n".join(lines) + "\n"
+
+
+def system_files(config, platform):
+    """{path: text} of the replacements for REPLACED (only in the .deb)."""
+    files = os_identity(config, platform)
+    files["usr/share/wayland-sessions/ubuntu.desktop"] = session_file()
+    mismatch = {p.lstrip("/") for p in REPLACED} ^ set(files)
+    if mismatch:
+        raise SystemExit(f"replacements and REPLACED disagree: {sorted(mismatch)}")
+    return files
+
+
+def add_system_look(root, assets, put, write):
+    """Additive files for the login screen, boot splash, terminal and every
+    user's look. None of them replaces a file of the base system, so they
+    are part of the ISO layer too."""
+    jx = "usr/share/jeronix"
+    put(assets / "wallpapers" / "jeronix-dark-2560x1440.png", f"{jx}/branding/jeronix-login-background.png")
+    put(ROOT / "packaging" / "jeronix_greeter.py", f"{jx}/scripts/jeronix_greeter.py")
+    put(SYSTEM_FILES / "95-jeronix-settings", "usr/share/gdm/dconf/95-jeronix-settings")
+    put(SYSTEM_FILES / "90_jeronix.gschema.override", "usr/share/glib-2.0/schemas/90_jeronix.gschema.override")
+    put(SYSTEM_FILES / "io.jeronix.UserSetup.desktop", "etc/xdg/autostart/io.jeronix.UserSetup.desktop")
+    template = (ROOT / "desktop" / "terminal" / "fastfetch.jsonc.in").read_text(encoding="utf-8")
+    write("etc/xdg/fastfetch/config.jsonc", template.replace("@LOGO@", f"/{jx}/terminal/fastfetch-logo.txt"))
+    # Boot splash: the two-step spinner's own images (GNOME artwork, from the
+    # build host's plymouth-theme-spinner) with the JERONIX J as watermark.
+    theme = "usr/share/plymouth/themes/jeronix"
+    images = sorted(p for p in PLYMOUTH_BASE.glob("*.png") if p.name not in ("watermark.png", "bgrt-fallback.png"))
+    names = [p.name for p in images]
+    if not any(n.startswith("throbber-") for n in names) or not any(n.startswith("animation-") for n in names):
+        raise SystemExit(f"{PLYMOUTH_BASE} lacks the spinner images; build on Ubuntu 26.04 desktop")
+    for image in images:
+        put(image, f"{theme}/{image.name}")
+    put(assets / "branding" / "jeronix-boot.png", f"{theme}/watermark.png")
+    put(SYSTEM_FILES / "jeronix.plymouth", f"{theme}/jeronix.plymouth")
+    # Text mode splash (no graphics yet, e.g. a disk password prompt): Ubuntu's
+    # ubuntu-text plugin, which otherwise prints "Ubuntu" in Ubuntu's colors.
+    text = (SYSTEM_FILES / "jeronix-text.plymouth.in").read_text(encoding="utf-8")
+    write("usr/share/plymouth/themes/jeronix-text/jeronix-text.plymouth",
+          text.replace("@VERSION@", design.load_platform()["ubuntu"]["version"]))
+
+
+def add_installer(root, write):
+    """Ubuntu's installer, branded, and the first login handed to JERONIX
+    Welcome.
+
+    * /usr/share/desktop-provision: the installer's own branding interface
+      (packaging/jeronix_installer.py).
+    * The installer's user service, when it closes in the live session,
+      switches Ubuntu's desktop icons and dock settings back on; JERONIX has
+      neither, so that step is dropped.
+    * Every new user (/etc/skel) starts with GNOME Initial Setup marked done:
+      its first-login pages (Ubuntu Pro, privacy, "ready to go") would open
+      next to JERONIX Welcome, which asks the same privacy questions.
+    """
+    import jeronix_installer
+    jeronix_installer.build(root / jeronix_installer.PROVISION_DIR)
+    write("etc/systemd/user/ubuntu-desktop-installer.service.d/jeronix.conf",
+          "# JERONIX: Ubuntu's installer service re-enables Ubuntu's desktop icons and dock\n"
+          "# settings when it closes in the live session. JERONIX uses neither.\n"
+          "[Service]\nExecStopPost=\n")
+    write("etc/skel/.config/gnome-initial-setup-done", "yes\n")
+
+
+def maintainer_scripts():
+    """{name: text} for DEBIAN/, with the diversion list filled in."""
+    scripts = {}
+    for path in sorted(MAINTAINER_SCRIPTS.iterdir()):
+        scripts[path.name] = path.read_text(encoding="utf-8").replace("@DIVERSIONS@", " ".join(DIVERSIONS))
+    for name in ("preinst", "postrm"):
+        if " ".join(DIVERSIONS) not in scripts[name]:
+            raise SystemExit(f"DEBIAN/{name} lost its diversion list")
+    return scripts
 
 
 def build_tree(out, base_profile=None):
@@ -153,9 +276,11 @@ def build_tree(out, base_profile=None):
     # (tokens, layouts, layout tool), laid out for /usr/share at run time.
     import jeronix_apps
     jeronix_apps.stage(root / "usr/share", python="/usr/bin/python3", apps_prefix="/usr/share",
-                       autostart_dir=root / "etc/xdg/autostart")
+                       autostart_dir=root / "etc/xdg/autostart", built=assets)
     for png in sorted((assets / "branding").iterdir()):
         put(png, f"usr/share/jeronix/branding/{png.name}")
+    add_system_look(root, assets, put, write)
+    add_installer(root, write)
     write("usr/bin/jeronix-layout",
           "#!/bin/sh\n# JERONIX layout tool: validate, apply and restore desktop layouts.\n"
           "exec python3 /usr/share/jeronix/scripts/jeronix_layout.py \"$@\"\n", 0o755)
@@ -174,9 +299,10 @@ def build_tree(out, base_profile=None):
           "JERONIX desktop layer\n\nCode (extensions, scripts): GPL-3.0-or-later. "
           "See /usr/share/common-licenses/GPL-3.\nArtwork (icons, wallpapers, branding): CC-BY-SA-4.0.\n")
     write("usr/share/doc/jeronix-desktop/README",
-          "JERONIX adds a GNOME Shell theme, the Stay Awake Quick Settings toggle, wallpapers,\n"
-          "icons and the Pure layout as system defaults to Ubuntu.\n\n"
-          "  gnome-extensions disable jeronix-shell-theme@jeronix   # back to the Ubuntu look\n"
+          "JERONIX: the desktop shell theme and extensions, apps, wallpapers, icons, the login\n"
+          "screen, boot splash and terminal look, and the Pure layout as system defaults.\n\n"
+          "  gnome-extensions disable jeronix-shell-theme@jeronix   # the default shell look\n"
+          "  python3 /usr/share/jeronix/scripts/jeronix_user_setup.py --undo   # your home folder\n"
           "  jeronix-layout plan /usr/share/jeronix/layouts/pure.json\n"
           "  dconf reset -f /org/gnome/   # forget your own changes, keep JERONIX defaults\n")
 
@@ -209,14 +335,36 @@ def build_deb(out, base_profile=None, maintainer=None):
         f"Description: {config['summary']}",
     ] + [f" {line}" if line else " ." for line in config["description"].splitlines()]
     (debian / "control").write_text("\n".join(control) + "\n", encoding="utf-8")
+    # Replacements for diverted Ubuntu files: in the .deb only, never in the
+    # tree the ISO builder layers on the base image (they would collide).
+    replacements = []
+    for rel, text in system_files(config, design.load_platform()).items():
+        dest = root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(text, encoding="utf-8")
+        dest.chmod(0o644)
+        replacements.append(dest)
     conffiles = sorted("/" + str(p.relative_to(root)) for p in (root / "etc").rglob("*") if p.is_file())
     (debian / "conffiles").write_text("\n".join(conffiles) + "\n", encoding="utf-8")
     for p in debian.iterdir():
         p.chmod(0o644)
+    for name, text in maintainer_scripts().items():
+        script = debian / name
+        script.write_text(text, encoding="utf-8")
+        script.chmod(0o644 if name == "triggers" else 0o755)
     deb = out / f"{config['package']}_{config['version']}_all.deb"
-    subprocess.run(["dpkg-deb", "--root-owner-group", "-Zxz", "--build", str(root), str(deb)],
-                   check=True, stdout=subprocess.DEVNULL)
-    shutil.rmtree(debian)
+    try:
+        subprocess.run(["dpkg-deb", "--root-owner-group", "-Zxz", "--build", str(root), str(deb)],
+                       check=True, stdout=subprocess.DEVNULL)
+    finally:
+        shutil.rmtree(debian)
+        for dest in replacements:
+            dest.unlink()
+            # Folders made only for a replacement go too.
+            parent = dest.parent
+            while parent != root and not any(parent.iterdir()):
+                parent.rmdir()
+                parent = parent.parent
     return deb
 
 

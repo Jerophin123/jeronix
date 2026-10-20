@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""JERONIX Welcome: first-run tour with style and layout choices.
+"""JERONIX Welcome: the first-login tour, with style, layout and privacy
+choices.
 
 With --first-run (used by the autostart entry) it does nothing once the tour
-has been completed or skipped, so it appears only once per user.
+has been completed or skipped, so it appears only once per user, and never
+in the live session of the installation medium (the installer has the
+screen there). It replaces GNOME Initial Setup's first-login pages, which
+JERONIX marks done for every new user (/etc/skel): their privacy questions
+are asked here.
 """
 
 import sys
@@ -17,25 +22,47 @@ gi.require_version("Adw", "1")
 gi.require_version("Gtk", "4.0")
 from gi.repository import Adw, Gio, Gtk  # noqa: E402
 
-from jeronix_common import paths, previews, style  # noqa: E402
+from jeronix_common import paths, previews, shell, style  # noqa: E402
 
 APP_ID = "io.jeronix.Welcome"
 DONE_FLAG = "welcome-done"
 STYLES = [("prefer-dark", "Dark", "Graphite surfaces, ivory text"),
-          ("prefer-light", "Light", "Warm paper surfaces, graphite text"),
+          ("prefer-light", "Light", "Cool white surfaces, graphite text"),
           ("default", "Follow system", "Switch with the system setting")]
-ESSENTIALS = [("Super", "Overview: windows, workspaces and search"),
-              ("Super+J", "JERONIX Launcher: type to find any app"),
-              ("Ctrl+Alt+Tab", "Move keyboard focus to the top bar or dock"),
-              ("Super+Left / Right", "Tile the window to half the screen")]
+# GNOME's accent colors (org.gnome.desktop.interface accent-color), as
+# libadwaita draws them.
+ACCENTS = [("blue", "#3584e4"), ("teal", "#2190a4"), ("green", "#3a944a"), ("yellow", "#c88800"),
+           ("orange", "#ed5b00"), ("red", "#e62d42"), ("pink", "#d56199"), ("purple", "#9141ac"),
+           ("slate", "#6f8396")]
+# schema, key, title, subtitle
+PRIVACY = [("org.gnome.system.location", "enabled", "Location services",
+            "Apps you allow can find where you are, for maps, weather and time zones"),
+           ("org.gnome.desktop.privacy", "report-technical-problems", "Send error reports",
+            "When an app crashes, offer to send an anonymous report so it gets fixed"),
+           ("org.gnome.desktop.privacy", "remember-recent-files", "Remember recent files",
+            "Start and Files can show what you opened lately")]
+ESSENTIALS = [("Super", "Start: type to find any app; right-click one to pin it"),
+              ("Super+S", "Control Center: Wi-Fi, sound, Dark Mode and more"),
+              ("Super+V", "Notifications and your calendar"),
+              ("Super+Left / Right", "Snap a window to half of the screen"),
+              ("Super+Up", "Maximize the window"),
+              ("Alt+Tab", "Switch between windows")]
 
 
 def done_flag():
     return paths.state_dir() / DONE_FLAG
 
 
+def live_session(cmdline=Path("/proc/cmdline")):
+    """Whether this is the live session of the installation medium."""
+    try:
+        return "boot=casper" in cmdline.read_text(encoding="utf-8").split()
+    except OSError:
+        return False
+
+
 def first_run_needed():
-    return not done_flag().exists()
+    return not done_flag().exists() and not live_session()
 
 
 def mark_done():
@@ -69,7 +96,8 @@ class WelcomeWindow(Adw.ApplicationWindow):
         self.chosen_layout = None
 
         self.carousel = Adw.Carousel(allow_scroll_wheel=False, hexpand=True, vexpand=True)
-        for p in (self.intro_page(), self.style_page(), self.layout_page(), self.essentials_page(), self.done_page()):
+        for p in (self.intro_page(), self.style_page(), self.layout_page(), self.privacy_page(),
+                  self.essentials_page(), self.done_page()):
             self.carousel.append(p)
         dots = Adw.CarouselIndicatorDots(carousel=self.carousel)
 
@@ -109,8 +137,8 @@ class WelcomeWindow(Adw.ApplicationWindow):
             logo.set_filename(str(lockup))
         logo.set_size_request(-1, 96)
         return page("Welcome to JERONIX",
-                    "A calm, handcrafted desktop built on Ubuntu's foundation: its kernel, drivers, "
-                    "software and security updates, with a desktop shaped around your work.",
+                    "A calm, handcrafted desktop shaped around your work: a Start menu that is yours "
+                    "to arrange, a Control Center one click away, and Settings in one place.",
                     Adw.Clamp(maximum_size=360, child=logo), eyebrow="Hello")
 
     def style_page(self):
@@ -125,8 +153,26 @@ class WelcomeWindow(Adw.ApplicationWindow):
             row = Adw.ActionRow(title=title, subtitle=subtitle, activatable_widget=check)
             row.add_prefix(check)
             group.add(row)
-        clamp = Adw.Clamp(maximum_size=460, child=group)
-        return page("Light or dark?", "Change it any time in JERONIX Settings.", clamp, eyebrow="Style")
+        accents = Gtk.Box(spacing=10, halign=Gtk.Align.CENTER, margin_top=8)
+        chosen = interface.get_string("accent-color")
+        first = None
+        for name, _ in ACCENTS:
+            swatch = Gtk.ToggleButton(group=first, active=name == chosen, tooltip_text=name.title())
+            first = first or swatch
+            swatch.add_css_class("jeronix-swatch")
+            swatch.add_css_class(f"jeronix-swatch-{name}")
+            swatch.update_property([Gtk.AccessibleProperty.LABEL], [f"{name.title()} accent"])
+            swatch.connect("toggled", lambda b, n=name: b.get_active() and interface.set_string("accent-color", n))
+            accents.append(swatch)
+        label = Gtk.Label(label="Accent color", margin_top=12)
+        label.add_css_class("heading")
+        column = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        column.append(group)
+        column.append(label)
+        column.append(accents)
+        clamp = Adw.Clamp(maximum_size=460, child=column)
+        return page("Make it yours", "Light or dark, and the color of buttons, switches and selections. "
+                    "Change both any time in JERONIX Settings.", clamp, eyebrow="Style")
 
     def layout_page(self):
         flow = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.SINGLE, max_children_per_line=3, min_children_per_line=3,
@@ -153,6 +199,19 @@ class WelcomeWindow(Adw.ApplicationWindow):
         return page("Choose a layout", "It is applied when you continue, and your current settings are saved "
                     "first. Try others later in Layout Studio.", flow, eyebrow="Layout")
 
+    def privacy_page(self):
+        group = Adw.PreferencesGroup()
+        source = Gio.SettingsSchemaSource.get_default()
+        for schema, key, title, subtitle in PRIVACY:
+            if not source.lookup(schema, True):
+                continue
+            settings = Gio.Settings.new(schema)
+            row = Adw.SwitchRow(title=title, subtitle=subtitle)
+            settings.bind(key, row, "active", Gio.SettingsBindFlags.DEFAULT)
+            group.add(row)
+        return page("Your privacy", "JERONIX collects nothing about you. These choices are yours, and stay in "
+                    "JERONIX Settings → Privacy.", Adw.Clamp(maximum_size=520, child=group), eyebrow="Privacy")
+
     def essentials_page(self):
         group = Adw.PreferencesGroup()
         for keys, action in ESSENTIALS:
@@ -170,10 +229,10 @@ class WelcomeWindow(Adw.ApplicationWindow):
                                   ("JERONIX Settings", "io.jeronix.Settings.desktop")):
             b = Gtk.Button(label=label)
             b.add_css_class("pill")
-            b.connect("clicked", lambda *_, d=desktop_id: Gio.DesktopAppInfo.new(d) and
-                      Gio.DesktopAppInfo.new(d).launch([], None))
+            b.connect("clicked", lambda *_, d=desktop_id: (info := shell.desktop_app_info(d)) and
+                      info.launch([], None))
             box.append(b)
-        return page("You're all set", "Open the JERONIX menu in the top-left corner whenever you need these again.",
+        return page("You're all set", "Find these again in Start whenever you need them.",
                     box, eyebrow="Done")
 
     # -- navigation ------------------------------------------------------

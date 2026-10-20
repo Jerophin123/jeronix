@@ -31,6 +31,16 @@ const IFACE = `
       <arg type="s" direction="in" name="property"/>
       <arg type="s" direction="out" name="color"/>
     </method>
+    <method name="FakeBrightness">
+      <arg type="b" direction="in" name="present"/>
+      <arg type="d" direction="in" name="value"/>
+    </method>
+    <method name="BrightnessValue">
+      <arg type="d" direction="out" name="value"/>
+    </method>
+    <method name="AccentColor">
+      <arg type="s" direction="out" name="colors"/>
+    </method>
     <method name="CustomStylesheets">
       <arg type="as" direction="out" name="paths"/>
     </method>
@@ -48,6 +58,16 @@ const IFACE = `
     </method>
     <method name="Screenshot">
       <arg type="s" direction="in" name="path"/>
+    </method>
+    <method name="Scroll">
+      <arg type="d" direction="in" name="x"/>
+      <arg type="d" direction="in" name="y"/>
+      <arg type="s" direction="in" name="direction"/>
+    </method>
+    <method name="GetSetting">
+      <arg type="s" direction="in" name="schema"/>
+      <arg type="s" direction="in" name="key"/>
+      <arg type="s" direction="out" name="value"/>
     </method>
     <method name="MovePointer">
       <arg type="d" direction="in" name="x"/>
@@ -76,6 +96,11 @@ const IFACE = `
       <arg type="d" direction="in" name="x"/>
       <arg type="d" direction="in" name="y"/>
     </method>
+    <method name="PointerButton">
+      <arg type="b" direction="in" name="pressed"/>
+    </method>
+    <method name="Lock"/>
+    <method name="Unlock"/>
   </interface>
 </node>`;
 
@@ -140,6 +165,37 @@ class Probe {
         }
     }
 
+    // A screen with adjustable brightness, for a headless shell that has
+    // none: the brightness manager's global scale (a value 0..1 with
+    // notify::value) is replaced on this instance only, and 'changed' is
+    // emitted as when a laptop panel appears. present=false removes it.
+    FakeBrightness(present, value) {
+        const manager = Main.brightnessManager;
+        if (present) {
+            if (!this._fakeScale) {
+                this._fakeScale = new St.Adjustment({lower: 0, upper: 1, value});
+                const scale = this._fakeScale;
+                Object.defineProperty(manager, 'globalScale', {get: () => scale, configurable: true});
+            }
+            this._fakeScale.value = value;
+        } else if (this._fakeScale) {
+            delete manager.globalScale;
+            this._fakeScale = null;
+        }
+        manager.emit('changed');
+    }
+
+    BrightnessValue() {
+        return this._fakeScale?.value ?? -1;
+    }
+
+    // The shell's live accent and the text color on it: '#rrggbbaa #rrggbbaa'.
+    AccentColor() {
+        const [bg, fg] = St.ThemeContext.get_for_stage(global.stage).get_accent_color();
+        return [bg, fg].map(c => `#${[c.red, c.green, c.blue, c.alpha]
+            .map(v => v.toString(16).padStart(2, '0')).join('')}`).join(' ');
+    }
+
     CustomStylesheets() {
         const theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
         return theme.get_custom_stylesheets().map(f => f.get_path());
@@ -180,6 +236,18 @@ class Probe {
         this._pointer.notify_absolute_motion(global.get_current_time() * 1000, x, y);
     }
 
+    // One mouse-wheel step ('up' or 'down') with the pointer at x, y.
+    Scroll(x, y, direction) {
+        this.MovePointer(x, y);
+        const dir = direction === 'up' ? Clutter.ScrollDirection.UP : Clutter.ScrollDirection.DOWN;
+        this._pointer.notify_discrete_scroll(global.get_current_time() * 1000, dir, Clutter.ScrollSource.WHEEL);
+    }
+
+    // Any GSettings key, as GVariant text.
+    GetSetting(schema, key) {
+        return new Gio.Settings({schema_id: schema}).get_value(key).print(true);
+    }
+
     WindowAction(title, action) {
         const win = global.get_window_actors().map(a => a.meta_window)
             .find(w => w.get_title() === title);
@@ -218,12 +286,30 @@ class Probe {
         settings.set_value(key, GLib.Variant.parse(type, value, null, null));
     }
 
+    // Presses or releases the primary button where the pointer is (a drag
+    // is PointerButton(true), MovePointer..., PointerButton(false)).
+    PointerButton(pressed) {
+        if (!this._pointer)
+            this.MovePointer(0, 0);
+        this._pointer.notify_button(global.get_current_time() * 1000, Clutter.BUTTON_PRIMARY,
+            pressed ? Clutter.ButtonState.PRESSED : Clutter.ButtonState.RELEASED);
+    }
+
     // Moves the virtual pointer and clicks the primary button.
     Click(x, y) {
         this.MovePointer(x, y);
         const time = () => global.get_current_time() * 1000;
         this._pointer.notify_button(time(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.PRESSED);
         this._pointer.notify_button(time(), Clutter.BUTTON_PRIMARY, Clutter.ButtonState.RELEASED);
+    }
+
+    // The lock screen, without authentication (test shells only).
+    Lock() {
+        Main.screenShield.lock(false);
+    }
+
+    Unlock() {
+        Main.screenShield.deactivate(false);
     }
 
     SetOverview(visible) {
@@ -237,8 +323,14 @@ class Probe {
         const monitor = Main.layoutManager.primaryMonitor;
         return JSON.stringify({
             overview: Main.overview.visible,
+            // Anything holding the keyboard (a menu, a modal dialog) shows here.
+            actionMode: Main.actionMode,
+            modalCount: Main.modalCount,
+            focusWindow: global.display.focus_window?.get_title() ?? null,
             overviewAnimating: Main.overview.animationInProgress,
             monitor: [monitor.x, monitor.y, monitor.width, monitor.height],
+            workArea: (a => [a.x, a.y, a.width, a.height])(
+                Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex)),
             windows: global.get_window_actors().map(a => {
                 const r = a.meta_window.get_frame_rect();
                 return {title: a.meta_window.get_title(), rect: [r.x, r.y, r.width, r.height],
@@ -253,6 +345,10 @@ class Probe {
                 Main.panel.statusArea.quickSettings?.container.get_parent()?.style_class || null,
             dateMenuParent: Main.panel.statusArea.dateMenu?.container.get_parent()?.name ||
                 Main.panel.statusArea.dateMenu?.container.get_parent()?.style_class || null,
+            sessionMode: Main.sessionMode.currentMode,
+            locked: Boolean(Main.screenShield?.locked),
+            extensionStates: Object.fromEntries(Main.extensionManager.getUuids()
+                .map(uuid => [uuid, Main.extensionManager.lookup(uuid)?.state ?? null])),
         });
     }
 }

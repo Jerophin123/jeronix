@@ -250,8 +250,12 @@ class Session:
                     proc.kill()
 
     def shell_log_errors(self, needles):
+        """Log lines that mention any of needles. GNOME's note that an
+        extension here shadows a copy installed in /usr/share (as on a
+        system with the jeronix-desktop package) is not an error."""
         log = (self.tmp / "shell.log").read_text(errors="replace")
-        return [line for line in log.splitlines() if any(n in line for n in needles)]
+        return [line for line in log.splitlines()
+                if any(n in line for n in needles) and "will not be loaded" not in line]
 
 
 def main(run, script, **outer_kwargs):

@@ -26,5 +26,13 @@ The settings beforehand were backed up with `dconf dump /` to
   covered by the headless tests (`desktop_lifecycle.py`) only.
 - Window previews, intellihide and edge reveal with real windows.
 - Studio and Classic layouts, and restoring to Ubuntu's desktop.
+- Start menu pinning, the Control Center and JERONIX Settings in a logged-in
+  session. They pass the headless shell tests (`desktop_lifecycle.py`,
+  `settings_pages.py`, which opens every Settings page), and every Settings
+  page was built against the real services of an Ubuntu 26.04 VM, but on
+  that VM Wi-Fi, Bluetooth pairing, battery, brightness and printers could
+  not be exercised (no such hardware). Bluetooth pairing, Wi-Fi joining,
+  display changes, user management, and changing the time zone or time
+  are therefore checked by code review and unit tests only.
 - Stay Awake with the full JERONIX shell, keyboard-only navigation, and
   light mode.

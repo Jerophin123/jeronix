@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=JERONIX user setup
+Comment=The JERONIX look for apps and the terminal in your home folder
+Exec=/usr/bin/python3 /usr/share/jeronix/scripts/jeronix_user_setup.py
+NoDisplay=true
+X-GNOME-Autostart-Phase=Initialization
+X-GNOME-AutoRestart=false
